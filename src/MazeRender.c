@@ -2,6 +2,7 @@
 #include "../include/colors.h"
 #include <SDL3/SDL_pixels.h>
 #include <SDL3/SDL_rect.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 struct MazeRender {
@@ -56,13 +57,10 @@ MazeRender *MazeRender_Create(SDL_Renderer *renderer, int cell_size,
   return maze_render;
 }
 
-static inline int get_cell_index(CellPos cp, Maze *maze) {
-  return cp.row * maze->columns + cp.col;
-}
-
 static inline void DrawAndFill_Cell(CellPos cell_pos, Vector2 current_pos,
                                     MazeRender *maze_render, Maze *maze) {
-  Cell curr_cell = maze->grid[get_cell_index(cell_pos, maze)];
+
+  Cell curr_cell = maze->grid[Maze_Get_CellIndex(cell_pos, maze)];
   SDL_Renderer *r = maze_render->renderer;
   int curr_x = current_pos.x;
   int curr_y = current_pos.y;
@@ -70,59 +68,11 @@ static inline void DrawAndFill_Cell(CellPos cell_pos, Vector2 current_pos,
   int wall_thick = maze_render->wall_thickness;
   Line line;
 
-  SDL_FRect rect = {curr_x + wall_thick, curr_y + wall_thick,
-                    cell_size - wall_thick, cell_size - wall_thick};
+  SDL_FRect rect = {curr_x, curr_y, cell_size, cell_size};
   // Below, the code draws the wall, if the wall does not exist, the cell rect
   // is modified.
 
   // Drawing North Wall.
-  if (!curr_cell.path_north) {
-
-    line = (Line){.start = {curr_x, curr_y},
-
-                  .end = {curr_x + cell_size, curr_y}};
-
-    DrawLineThick(r, line, maze_render->wall_color, wall_thick);
-  } else {
-    rect.y -= wall_thick;
-    rect.h += wall_thick;
-  }
-
-  // Drawing South Wall
-  if (!curr_cell.path_south) {
-
-    line = (Line){.start = {curr_x, curr_y + cell_size},
-
-                  .end = {curr_x + cell_size, curr_y + cell_size}};
-
-    DrawLineThick(r, line, maze_render->wall_color, wall_thick);
-  } else {
-    rect.h += wall_thick;
-  }
-
-  // Drawing east wall
-  if (!curr_cell.path_east) {
-    line = (Line){.start = {.x = curr_x + cell_size, .y = curr_y},
-
-                  .end = {.x = curr_x + cell_size, curr_y + cell_size}};
-
-    DrawLineThick(r, line, maze_render->wall_color, wall_thick);
-  } else {
-    rect.x -= wall_thick;
-    rect.w += wall_thick;
-  }
-
-  // Drawing west wall
-  if (!curr_cell.path_west) {
-
-    line = (Line){.start = {.x = curr_x, .y = curr_y},
-
-                  .end = {.x = curr_x, curr_y + cell_size}};
-
-    DrawLineThick(r, line, maze_render->wall_color, wall_thick);
-  } else {
-    rect.w += wall_thick;
-  }
 
   SDL_Color fill_col = COLOR_WHITE;
 
@@ -146,6 +96,40 @@ static inline void DrawAndFill_Cell(CellPos cell_pos, Vector2 current_pos,
 
   SDL_SetRenderDrawColor(r, fill_col.r, fill_col.g, fill_col.b, fill_col.a);
   SDL_RenderFillRect(r, &rect);
+
+  if (!curr_cell.path_north) {
+
+    line = (Line){.start = {curr_x, curr_y},
+
+                  .end = {curr_x + cell_size, curr_y}};
+
+    DrawLineThick(r, line, maze_render->wall_color, wall_thick);
+  }
+  // Drawing South Wall
+  if (!curr_cell.path_south) {
+
+    line = (Line){.start = {curr_x, curr_y + cell_size},
+
+                  .end = {curr_x + cell_size, curr_y + cell_size}};
+
+    DrawLineThick(r, line, maze_render->wall_color, wall_thick);
+  }
+  // Drawing east wall
+  if (!curr_cell.path_east) {
+    line = (Line){.start = {.x = curr_x + cell_size, .y = curr_y},
+
+                  .end = {.x = curr_x + cell_size, curr_y + cell_size}};
+
+    DrawLineThick(r, line, maze_render->wall_color, wall_thick);
+  }
+  // Drawing west wall
+  if (!curr_cell.path_west) {
+    line = (Line){.start = {.x = curr_x, .y = curr_y},
+
+                  .end = {.x = curr_x, curr_y + cell_size}};
+
+    DrawLineThick(r, line, maze_render->wall_color, wall_thick);
+  }
 }
 
 void MazeRender_Draw(MazeRender *maze_render, Maze *maze) {

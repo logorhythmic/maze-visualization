@@ -15,7 +15,7 @@
 #define MAZE_START_POS ((Vector2){45, 45})
 #define COLUMNS 8
 #define ROWS 8
-#define WALL_THICKNESS 3
+#define WALL_THICKNESS 4
 
 int main() {
   SDL_SetHint(SDL_HINT_VIDEO_WAYLAND_SCALE_TO_DISPLAY, "1");
@@ -28,7 +28,8 @@ int main() {
   printf("Window width: %d, Window Height: %d\n", w, h);
   SDL_Event event;
 
-  CellPos start_cell = {0, 0};
+  CellPos start_cell = {1, 1};
+
   CellPos end_cell = {9, 9};
   Maze *maze = Maze_Create(ROWS, COLUMNS, start_cell, end_cell);
   MazeRender *maze_render = MazeRender_Create(

@@ -31,5 +31,40 @@ typedef struct {
   int total_cells;
 } Maze;
 
+typedef enum {
+  ACTION_NONE,
+  BREAK_WALL,
+} CellAction;
+
+typedef struct {
+  CellPos cell1;
+  CellPos cell2;
+  CellState cell_state;
+  CellAction cell_action;
+} Event;
+
+typedef struct {
+  Event *events;
+  int current_event;
+  int total_events;
+  int capacity;
+} MazeEvents;
+
+static inline bool Maze_Is_CellValid(CellPos cell, Maze *maze) {
+  if (cell.row < maze->rows && cell.row >= 0) {
+    if (cell.col < maze->columns && cell.col >= 0) {
+      return true;
+    }
+  }
+  return false;
+}
+
+static inline int Maze_Get_CellIndex(CellPos cp, Maze *maze) {
+  return cp.row * maze->columns + cp.col;
+}
+
 Maze *Maze_Create(int rows, int columns, CellPos start_cell, CellPos end_cell);
+
+void Maze_Break_Wall(CellPos cell1, CellPos cell2, Maze *maze);
+
 void Maze_Destroy(Maze *maze);
