@@ -67,4 +67,21 @@ Maze *Maze_Create(int rows, int columns, CellPos start_cell, CellPos end_cell);
 
 void Maze_Break_Wall(CellPos cell1, CellPos cell2, Maze *maze);
 
+void Maze_Reset(Maze *maze);
+
 void Maze_Destroy(Maze *maze);
+
+//------------------------Maze Events------------------------------------
+MazeEvents *Maze_Create_Events(int capacity);
+
+void Maze_Destroy_Events(MazeEvents *maze_events);
+
+bool Maze_Add_Event(MazeEvents *maze_events, CellPos cell1, CellPos cell2,
+                    CellState cell_state, CellAction cell_action);
+
+bool Maze_Step_Event(MazeEvents *maze_events, Maze *maze);
+
+void Maze_Reset_EventNumber(MazeEvents *maze_events);
+
+void Maze_StepAll_Event(MazeEvents *maze_events, Maze *maze);
+//----------------------------------------------------------------------

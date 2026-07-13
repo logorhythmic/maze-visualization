@@ -1,0 +1,112 @@
+#include "../include/generation.h"
+#include <SDL3/SDL_stdinc.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+bool Get_ValidNeighbour(CellPos curr_pos, CellPos *neighbour_pos,
+                        bool *visited_cells, Maze *maze) {
+  CellPos north = {curr_pos.row - 1, curr_pos.col};
+  CellPos south = {curr_pos.row + 1, curr_pos.col};
+  CellPos east = {curr_pos.row, curr_pos.col + 1};
+  CellPos west = {curr_pos.row, curr_pos.col - 1};
+  int valid_count = 0;
+  CellPos valid_cells[4];
+
+  if (Maze_Is_CellValid(north, maze) &&
+      !visited_cells[Maze_Get_CellIndex(north, maze)]) {
+    valid_cells[valid_count] = north;
+    valid_count += 1;
+  }
+
+  if (Maze_Is_CellValid(south, maze) &&
+      !visited_cells[Maze_Get_CellIndex(south, maze)]) {
+    valid_cells[valid_count] = south;
+    valid_count += 1;
+  }
+
+  if (Maze_Is_CellValid(east, maze) &&
+      !visited_cells[Maze_Get_CellIndex(east, maze)]) {
+    valid_cells[valid_count] = east;
+    valid_count += 1;
+  }
+
+  if (Maze_Is_CellValid(west, maze) &&
+      !visited_cells[Maze_Get_CellIndex(west, maze)]) {
+    valid_cells[valid_count] = west;
+    valid_count += 1;
+  }
+  if (valid_count == 0) {
+    return false;
+  }
+  *neighbour_pos = valid_cells[SDL_rand(valid_count)];
+
+  return true;
+}
+
+MazeEvents *DFSGen_Generate_MazeEvents(Maze *maze) {
+  int total_events = maze->total_cells * 2;
+  int rows = maze->rows;
+  int columns = maze->columns;
+  MazeEvents *events = Maze_Create_Events(total_events);
+
+  CellPos start_pos = maze->start_cell;
+
+  CellPos *current_path = calloc(maze->total_cells, sizeof(CellPos));
+  int top = 0;
+  bool *visited_cells = calloc(maze->total_cells, sizeof(bool));
+  current_path[top] = start_pos;
+  visited_cells[Maze_Get_CellIndex(start_pos, maze)] = true;
+
+  while (top >= 0) {
+    CellPos neighbour;
+    CellPos curr_cell = current_path[top];
+
+    if (Get_ValidNeighbour(curr_cell, &neighbour, visited_cells, maze)) {
+      // This logic is for advancing
+
+      // 1. Adding neighbour to current_path
+      top += 1;
+      current_path[top] = neighbour;
+
+      // 2. Adding valid neighbour to visited_cells
+      int index = Maze_Get_CellIndex(neighbour, maze);
+      visited_cells[index] = true;
+
+      // 3. Changing state of cell
+      CellState cell_state = STATE_VISITED;
+
+      // 4. Breaking wall between current cell and neighbour cell
+      CellPos cell1 = curr_cell;
+      CellPos cell2 = neighbour;
+      CellAction cell_action = BREAK_WALL;
+
+      // 5. Adding event to MazeEvents
+      if (!Maze_Add_Event(events, cell1, cell2, cell_state, cell_action)) {
+        printf("Somehow MazeEvents full. Wtf\n");
+      }
+    }
+
+    else {
+      // This logic is for backtracking
+
+      // 1. Popping the element from the stack
+      CellPos cell1 = current_path[top];
+      CellPos cell2 = {-1, -1};
+      top -= 1;
+
+      // 2. Changing Cell state
+      CellState cell_state = STATE_BACKTRACKED;
+
+      // 3. No Cell action
+      CellAction cell_action = ACTION_NONE;
+
+      // 3. Adding to MazeEvents
+      Maze_Add_Event(events, cell1, cell2, cell_state, cell_action);
+    }
+  }
+
+  free(current_path);
+  free(visited_cells);
+  printf("While loop exited\n");
+  return events;
+}

@@ -1,21 +1,17 @@
-#include "include/Maze.h"
-#include "include/MazeRender.h"
 #include "include/colors.h"
+#include "include/maze.h"
+#include "include/maze_render.h"
+#include "include/state_manager.h"
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_events.h>
 #include <SDL3/SDL_init.h>
 #include <SDL3/SDL_render.h>
 #include <SDL3/SDL_video.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #define SCR_WIDTH 900
 #define SCR_HEIGHT 900
-
-#define CELL_SIZE 100
-#define MAZE_START_POS ((Vector2){45, 45})
-#define COLUMNS 8
-#define ROWS 8
-#define WALL_THICKNESS 4
 
 int main() {
   SDL_SetHint(SDL_HINT_VIDEO_WAYLAND_SCALE_TO_DISPLAY, "1");
@@ -28,33 +24,50 @@ int main() {
   printf("Window width: %d, Window Height: %d\n", w, h);
   SDL_Event event;
 
-  CellPos start_cell = {1, 1};
+  SUBMODE_DFS_INFO *sdi = DFSGen_Create_Submode(renderer);
 
-  CellPos end_cell = {9, 9};
-  Maze *maze = Maze_Create(ROWS, COLUMNS, start_cell, end_cell);
-  MazeRender *maze_render = MazeRender_Create(
-      renderer, CELL_SIZE, MAZE_START_POS, WALL_THICKNESS, COLOR_BLACK);
+  const double frequency_inv = 1.0 / (double)SDL_GetPerformanceFrequency();
+  double delta_time_ms = 0.0;
+  uint64_t last_start = SDL_GetPerformanceCounter();
 
   bool done = false;
   while (!done) {
+    uint64_t current_start = SDL_GetPerformanceCounter();
+    delta_time_ms = (current_start - last_start) * frequency_inv * 1000.0;
+    last_start = current_start;
     while (SDL_PollEvent(&event)) {
+
       switch (event.type) {
       case SDL_EVENT_QUIT:
         done = true;
+        break;
+
+      case SDL_EVENT_KEY_DOWN:
+
+        if (event.key.key == SDLK_S) {
+          printf("Displaying maze static\n");
+          DFS_Set_Submode(sdi, DISPLAY_MAZE_STATIC);
+        }
+
+        if (event.key.key == SDLK_V) {
+          printf("Starting Visualization\n");
+          DFS_Set_Submode(sdi, DISPLAY_VISUALIZE);
+        }
+        break;
       }
     }
 
     SDL_Color bg = COLOR_RENDER_BACKGROUND;
-    SDL_RenderClear(renderer);
-    MazeRender_Draw(maze_render, maze);
     SDL_SetRenderDrawColor(renderer, bg.r, bg.g, bg.b, bg.a);
+    SDL_RenderClear(renderer);
+    DFS_Process_Submode(renderer, sdi, delta_time_ms);
     SDL_RenderPresent(renderer);
   }
 
-  Maze_Destroy(maze);
-  MazeRender_Destroyr(maze_render);
   SDL_DestroyRenderer(renderer);
+  DFSGen_Destroy_Submode(sdi);
   SDL_DestroyWindow(window);
+  SDL_Quit();
 
   return 0;
 }

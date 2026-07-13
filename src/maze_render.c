@@ -1,4 +1,4 @@
-#include "../include/MazeRender.h"
+#include "../include/maze_render.h"
 #include "../include/colors.h"
 #include <SDL3/SDL_pixels.h>
 #include <SDL3/SDL_rect.h>
@@ -44,9 +44,9 @@ static inline void DrawLineThick(SDL_Renderer *r, Line line, SDL_Color col,
   }
 }
 
-MazeRender *MazeRender_Create(SDL_Renderer *renderer, int cell_size,
-                              Vector2 start_pos, int wall_thickness,
-                              SDL_Color wall_color) {
+MazeRender *Maze_Render_Create(SDL_Renderer *renderer, int cell_size,
+                               Vector2 start_pos, int wall_thickness,
+                               SDL_Color wall_color) {
   MazeRender *maze_render = calloc(1, sizeof(MazeRender));
   maze_render->renderer = renderer;
   maze_render->wall_color = wall_color;
@@ -68,7 +68,8 @@ static inline void DrawAndFill_Cell(CellPos cell_pos, Vector2 current_pos,
   int wall_thick = maze_render->wall_thickness;
   Line line;
 
-  SDL_FRect rect = {curr_x, curr_y, cell_size, cell_size};
+  SDL_FRect rect = {curr_x + wall_thick, curr_y + wall_thick, cell_size,
+                    cell_size};
   // Below, the code draws the wall, if the wall does not exist, the cell rect
   // is modified.
 
@@ -132,7 +133,7 @@ static inline void DrawAndFill_Cell(CellPos cell_pos, Vector2 current_pos,
   }
 }
 
-void MazeRender_Draw(MazeRender *maze_render, Maze *maze) {
+void Maze_Render_Draw(MazeRender *maze_render, Maze *maze) {
   int start_x = maze_render->start_pos_x;
   int start_y = maze_render->start_pos_y;
   int curr_x = start_x;
@@ -154,4 +155,4 @@ void MazeRender_Draw(MazeRender *maze_render, Maze *maze) {
   }
 }
 
-void MazeRender_Destroyr(MazeRender *maze_render) { free(maze_render); }
+void Maze_Render_Destroy(MazeRender *maze_render) { free(maze_render); }
