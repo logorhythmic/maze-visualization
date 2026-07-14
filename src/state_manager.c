@@ -1,6 +1,8 @@
 #include "../include/state_manager.h"
 #include "../include/colors.h"
 #include "../include/generation.h"
+#include "../include/maze.h"
+#include "../include/maze_render.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -12,89 +14,118 @@
 
 #define DFS_TIME_DELAY_MS 100
 
-struct SUBMODE_DFS_INFO {
+typedef enum { MODE_NONE, DFS_GEN, DFS_SOLVE, BFS_SOLVE, ASTAR_SOLVE } MazeMode;
+
+struct State {
   Maze *maze;
   MazeRender *maze_render;
-  MazeEvents *DFSGen_events;
-  bool dfs_gen_finished;
+
+  MazeEvents *generate_events;
+  MazeEvents *solve_events;
+  MazeEvents *current_events;
 
   bool maze_is_blank;
 
   double time_elapsed;
 
-  SUBMODE current_submode;
+  SDL_Renderer *renderer;
+
+  MazeMode maze_mode;
+  RenderStyle render_style;
 };
 
-SUBMODE_DFS_INFO *DFSGen_Create_Submode(SDL_Renderer *renderer) {
-  SUBMODE_DFS_INFO *sdi = calloc(1, sizeof(SUBMODE_DFS_INFO));
+State *State_Create(SDL_Renderer *renderer) {
+  State *state = calloc(1, sizeof(State));
   CellPos start_cell = {5, 5};
   CellPos end_cell = {9, 9};
   Maze *maze = Maze_Create(ROWS, COLUMNS, start_cell, end_cell);
-  MazeRender *maze_render = Maze_Render_Create(
-      renderer, CELL_SIZE, MAZE_START_POS, WALL_THICKNESS, COLOR_BLACK);
-  sdi->maze = maze;
-
-  if (sdi->maze == NULL) {
+  state->maze = maze;
+  if (state->maze == NULL) {
     printf("Maze failed to allocate. Exiting");
     exit(1);
   }
-  sdi->DFSGen_events = DFSGen_Generate_MazeEvents(maze);
-  sdi->maze_render = maze_render;
-  sdi->current_submode = IDLE;
-  sdi->maze_is_blank = true;
-  sdi->time_elapsed = 0.0;
-  return sdi;
+
+  MazeRender *maze_render = Maze_Render_Create(
+      renderer, CELL_SIZE, MAZE_START_POS, WALL_THICKNESS, COLOR_BLACK);
+  state->maze_render = maze_render;
+  if (state->maze_render == NULL) {
+    printf("Maze Render failed to allocate. Exiting");
+    exit(1);
+  }
+
+  state->maze_mode = MODE_NONE;
+  state->render_style = RENDER_STATIC;
+  state->current_events = NULL;
+  state->solve_events = NULL;
+  state->generate_events = NULL;
+  state->maze_is_blank = true;
+  state->time_elapsed = 0.0;
+  return state;
 }
 
-void DFS_Set_Submode(SUBMODE_DFS_INFO *sdi, SUBMODE new_state) {
+void State_Set_MazeMode(const SDL_Event *event, State *state) {
 
-  if (new_state == DISPLAY_MAZE_STATIC) {
-    Maze_Reset(sdi->maze);
-    Maze_StepAll_Event(sdi->DFSGen_events, sdi->maze);
-    printf("MAZE STATIC, RESTEPPED THROUGH ALL EVENTS\n");
-    sdi->current_submode = new_state;
+  if (event->key.key == SDLK_S) {
+    printf("Changed to Render static mode\n");
+
+    state->render_style = RENDER_STATIC;
+
+    // Step through all events only if MazeEvents have been generated
+    if (state->current_events != NULL) {
+      Maze_StepAll_Event(state->current_events, state->maze);
+    }
+  }
+  if (event->key.key == SDLK_A) {
+    // Safety check
+    if (state->current_events == NULL) {
+      state->render_style = RENDER_STATIC;
+      return;
+    }
+
+    printf("Render Animated mode\n");
+    Maze_Reset(state->maze);
+    state->render_style = RENDER_ANIMATED;
   }
 
-  if (new_state == DISPLAY_VISUALIZE) {
-    Maze_Reset(sdi->maze);
-    Maze_Reset_EventNumber(sdi->DFSGen_events);
-    sdi->current_submode = new_state;
-  }
-
-  if (new_state == IDLE) {
-    sdi->current_submode = new_state;
+  if (event->key.key == SDLK_D) {
+    state->generate_events = DFSGen_Generate_MazeEvents(state->maze);
+    state->current_events = state->generate_events;
+    state->render_style = RENDER_STATIC;
+    state->maze_mode = DFS_GEN;
   }
 }
 
-void DFS_Process_Submode(SDL_Renderer *r, SUBMODE_DFS_INFO *sdi,
-                         uint64_t delta_time_ms) {
-  switch (sdi->current_submode) {
+void State_Render(State *state_info, uint64_t delta_time_ms) {
 
-  case IDLE:
+  SDL_Renderer *renderer = state_info->renderer;
+  switch (state_info->render_style) {
+
+  case RENDER_STATIC:
+    Maze_Render_Draw(state_info->maze_render, state_info->maze);
     break;
 
-  case DISPLAY_MAZE_STATIC:
-    Maze_Render_Draw(sdi->maze_render, sdi->maze);
-    break;
+  case RENDER_ANIMATED:
 
-  case DISPLAY_VISUALIZE:
-    sdi->time_elapsed += delta_time_ms;
-    while (sdi->time_elapsed >= DFS_TIME_DELAY_MS) {
-      sdi->time_elapsed -= DFS_TIME_DELAY_MS;
-      if (!Maze_Step_Event(sdi->DFSGen_events, sdi->maze)) {
-        DFS_Set_Submode(sdi, DISPLAY_MAZE_STATIC);
+    state_info->time_elapsed += delta_time_ms;
+
+    while (state_info->time_elapsed >= DFS_TIME_DELAY_MS) {
+      state_info->time_elapsed -= DFS_TIME_DELAY_MS;
+      if (!Maze_Step_Event(state_info->current_events, state_info->maze)) {
+        state_info->render_style = RENDER_STATIC;
         break;
       }
     }
-    Maze_Render_Draw(sdi->maze_render, sdi->maze);
+
+    Maze_Render_Draw(state_info->maze_render, state_info->maze);
 
     break;
   }
 }
 
-void DFSGen_Destroy_Submode(SUBMODE_DFS_INFO *sdi) {
-  Maze_Render_Destroy(sdi->maze_render);
-  Maze_Destroy_Events(sdi->DFSGen_events);
-  Maze_Destroy(sdi->maze);
-  free(sdi);
+void State_Destroy(State *state) {
+  Maze_Destroy_Events(state->generate_events);
+  Maze_Destroy_Events(state->solve_events);
+  Maze_Render_Destroy(state->maze_render);
+  Maze_Destroy(state->maze);
+  free(state);
 }

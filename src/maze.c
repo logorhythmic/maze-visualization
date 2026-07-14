@@ -84,6 +84,9 @@ MazeEvents *Maze_Create_Events(int capacity) {
 }
 
 void Maze_Destroy_Events(MazeEvents *maze_events) {
+  if (maze_events == NULL) {
+    return;
+  }
   free(maze_events->events);
   free(maze_events);
 }
