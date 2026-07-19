@@ -8,6 +8,7 @@ typedef struct {
 
 typedef enum {
   STATE_BLANK,
+  STATE_GENERATED,
   STATE_VISITED,
   STATE_BACKTRACKED,
   STATE_SOLUTION,
@@ -68,6 +69,8 @@ Maze *Maze_Create(int rows, int columns, CellPos start_cell, CellPos end_cell);
 void Maze_Break_Wall(CellPos cell1, CellPos cell2, Maze *maze);
 
 void Maze_Reset(Maze *maze);
+
+void Maze_SetAll_CellState(Maze *maze, CellState cell_state);
 
 void Maze_Destroy(Maze *maze);
 

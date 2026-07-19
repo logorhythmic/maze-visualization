@@ -107,6 +107,5 @@ MazeEvents *DFSGen_Generate_MazeEvents(Maze *maze) {
 
   free(current_path);
   free(visited_cells);
-  printf("While loop exited\n");
   return events;
 }

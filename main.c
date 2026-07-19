@@ -12,6 +12,8 @@
 #define SCR_WIDTH 900
 #define SCR_HEIGHT 900
 
+#define TIME_DELAY_MS 10
+
 int main() {
 
   SDL_SetHint(SDL_HINT_VIDEO_WAYLAND_SCALE_TO_DISPLAY, "1");
@@ -35,7 +37,7 @@ int main() {
   //
 
   // Setting up state
-  State *state = State_Create(renderer);
+  State *state = State_Create(renderer, TIME_DELAY_MS);
 
   bool done = false;
   while (!done) {
@@ -49,14 +51,15 @@ int main() {
         done = true;
         break;
       case SDL_EVENT_KEY_DOWN:
-        State_Set_MazeMode(&event, state);
+        State_Process_Event(state, &event);
         break;
       }
     }
     SDL_Color bg = COLOR_RENDER_BACKGROUND;
     SDL_SetRenderDrawColor(renderer, bg.r, bg.g, bg.b, bg.a);
     SDL_RenderClear(renderer);
-    State_Render(state, delta_time_ms);
+    State_Update(state, delta_time_ms);
+    State_Render(state);
     SDL_RenderPresent(renderer);
   }
   SDL_DestroyRenderer(renderer);

@@ -40,6 +40,13 @@ void Maze_Reset(Maze *maze) {
   }
 }
 
+void Maze_SetAll_CellState(Maze *maze, CellState cell_state) {
+  for (int i = 0; i < maze->total_cells; i++) {
+    Cell *curr_cell = &maze->grid[i];
+    curr_cell->cell_state = cell_state;
+  }
+}
+
 void Maze_Break_Wall(CellPos cell1, CellPos cell2, Maze *maze) {
   if (!Maze_Is_CellValid(cell1, maze) || !(Maze_Is_CellValid(cell2, maze))) {
     return;
@@ -65,7 +72,6 @@ void Maze_Break_Wall(CellPos cell1, CellPos cell2, Maze *maze) {
       curr_cell->path_east = true;
       neighbour_cell->path_west = true;
     } else {
-      printf("Column2 if trigegred\n");
       // Cell1 is East of Cell 2
       curr_cell->path_west = true;
       neighbour_cell->path_east = true;
@@ -106,6 +112,7 @@ bool Maze_Add_Event(MazeEvents *maze_events, CellPos cell1, CellPos cell2,
 }
 
 bool Maze_Step_Event(MazeEvents *maze_events, Maze *maze) {
+
   if (maze_events->current_event >= maze_events->total_events) {
     maze_events->current_event = 0;
     return false;
@@ -117,11 +124,9 @@ bool Maze_Step_Event(MazeEvents *maze_events, Maze *maze) {
 
   switch (maze_events->events[curr_event].cell_action) {
   case ACTION_NONE:
-    printf("Action None triggered\n");
     break;
 
   case BREAK_WALL:
-    printf("Break Wall triggered\n");
     Maze_Break_Wall(maze_events->events[curr_event].cell1,
                     maze_events->events[curr_event].cell2, maze);
     break;
@@ -131,11 +136,8 @@ bool Maze_Step_Event(MazeEvents *maze_events, Maze *maze) {
 }
 
 void Maze_StepAll_Event(MazeEvents *maze_events, Maze *maze) {
-  Maze_Reset(maze);
-  maze_events->current_event = 0;
   while (Maze_Step_Event(maze_events, maze))
     ;
-  printf("Stepped through all events\n");
 }
 
 void Maze_Reset_EventNumber(MazeEvents *maze_events) {

@@ -86,17 +86,25 @@ static inline void DrawAndFill_Cell(CellPos cell_pos, Vector2 current_pos,
     fill_col = COL_STATE_BACKTRACKED;
     break;
 
-  case STATE_SOLUTION:
-    fill_col = COL_STATE_SOLUTION;
-    break;
-
   case STATE_VISITED:
     fill_col = COL_STATE_VISITED;
     break;
+
+  case STATE_SOLUTION:
+    fill_col = COL_STATE_SOLUTION;
+    float offset = 0;
+    rect = (SDL_FRect){curr_x + offset, curr_y + offset, cell_size - offset,
+                       cell_size - offset};
+    break;
+
+  case STATE_GENERATED:
+    fill_col = COL_STATE_GENERATED;
   }
 
-  SDL_SetRenderDrawColor(r, fill_col.r, fill_col.g, fill_col.b, fill_col.a);
-  SDL_RenderFillRect(r, &rect);
+  if (fill_col.a > 0) {
+    SDL_SetRenderDrawColor(r, fill_col.r, fill_col.g, fill_col.b, fill_col.a);
+    SDL_RenderFillRect(r, &rect);
+  }
 
   if (!curr_cell.path_north) {
 
@@ -133,7 +141,7 @@ static inline void DrawAndFill_Cell(CellPos cell_pos, Vector2 current_pos,
   }
 }
 
-void Maze_Render_Draw(MazeRender *maze_render, Maze *maze) {
+void Maze_Render(MazeRender *maze_render, Maze *maze) {
   int start_x = maze_render->start_pos_x;
   int start_y = maze_render->start_pos_y;
   int curr_x = start_x;

@@ -13,6 +13,6 @@ MazeRender *Maze_Render_Create(SDL_Renderer *renderer, int cell_size,
                                Vector2 maze_start_pos, int wall_thickness,
                                SDL_Color wall_color);
 
-void Maze_Render_Draw(MazeRender *maze_render, Maze *maze);
+void Maze_Render(MazeRender *maze_render, Maze *maze);
 
 void Maze_Render_Destroy(MazeRender *maze_render);
