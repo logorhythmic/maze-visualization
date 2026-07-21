@@ -2,6 +2,7 @@
 #include "../include/colors.h"
 #include <SDL3/SDL_pixels.h>
 #include <SDL3/SDL_rect.h>
+#include <SDL3/SDL_render.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -22,8 +23,8 @@ typedef union {
   int points[4]; // [start.x, start.y, end.x, end.y]
 } Line;
 
-static inline void DrawLineThick(SDL_Renderer *r, Line line, SDL_Color col,
-                                 int thickness) {
+static void DrawLineThick(SDL_Renderer *r, Line line, SDL_Color col,
+                          int thickness) {
   SDL_SetRenderDrawColor(r, col.r, col.g, col.b, col.a);
   Vector2 start_pos = line.start;
   Vector2 end_pos = line.end;
@@ -57,8 +58,90 @@ MazeRender *Maze_Render_Create(SDL_Renderer *renderer, int cell_size,
   return maze_render;
 }
 
-static inline void DrawAndFill_Cell(CellPos cell_pos, Vector2 current_pos,
-                                    MazeRender *maze_render, Maze *maze) {
+static void Render_Solution_Line(SDL_Renderer *r, CellPos curr_pos,
+                                 Vector2 top_left, int cell_size, Maze *maze,
+                                 int wall_thickness) {
+  // Additive rendering
+  //  We render a block in the middle of the cell
+  //  Then depending on if the adjacent cells are solution cells, we add blocks
+  //  to render
+
+  Cell *cell = &maze->grid[Maze_Get_CellIndex(curr_pos, maze)];
+
+  SDL_Color fill_col = COL_STATE_SOLUTION;
+
+  float actual_size = cell_size;
+
+  float mid_rect_area = 0.45f;
+
+  float inner_start_x = (float)top_left.x + wall_thickness;
+  float inner_start_y = (float)top_left.y + wall_thickness;
+
+  // Do 1.0f and not 2.0f because with respect to the inner_start values, the
+  // actual area is only covered by the bottom and rightmost walls
+  float usable_size = cell_size - (1.0f * wall_thickness);
+
+  // Size of the rect rendered in the middle
+  float mid_rect_size = usable_size * mid_rect_area;
+
+  // Offset determines how much space between wall and center rect
+  float offset = ((usable_size - mid_rect_size) / 2.0f);
+
+  float final_x = inner_start_x + offset;
+  float final_y = inner_start_y + offset;
+
+  SDL_FRect centre_rect = {final_x, final_y, mid_rect_size, mid_rect_size};
+
+  SDL_FRect north_half_rect = {final_x, final_y - offset, mid_rect_size,
+                               offset + wall_thickness};
+
+  SDL_FRect south_half_rect = {final_x, final_y + mid_rect_size, mid_rect_size,
+                               offset + wall_thickness};
+  SDL_FRect east_half_rect = {final_x + mid_rect_size, final_y,
+                              offset + wall_thickness, mid_rect_size};
+
+  SDL_FRect west_half_rect = {final_x - offset, final_y,
+                              offset + wall_thickness, mid_rect_size};
+
+  // Render Middle Cell
+  SDL_SetRenderDrawColor(r, fill_col.r, fill_col.g, fill_col.b, fill_col.a);
+  SDL_RenderFillRect(r, &centre_rect);
+
+  // Check which adjacent cell is it connected to
+  if (cell->path_north) {
+    CellPos north = {curr_pos.row - 1, curr_pos.col};
+    Cell *north_cell = &maze->grid[Maze_Get_CellIndex(north, maze)];
+    if (north_cell->cell_state == STATE_SOLUTION) {
+      SDL_RenderFillRect(r, &north_half_rect);
+    }
+  }
+  //
+  if (cell->path_south) {
+    CellPos south = {curr_pos.row + 1, curr_pos.col};
+    Cell *south_cell = &maze->grid[Maze_Get_CellIndex(south, maze)];
+    if (south_cell->cell_state == STATE_SOLUTION) {
+      SDL_RenderFillRect(r, &south_half_rect);
+    }
+  }
+  //
+  if (cell->path_east) {
+    CellPos east = {curr_pos.row, curr_pos.col + 1};
+    Cell *east_cell = &maze->grid[Maze_Get_CellIndex(east, maze)];
+    if (east_cell->cell_state == STATE_SOLUTION) {
+      SDL_RenderFillRect(r, &east_half_rect);
+    }
+  }
+
+  if (cell->path_west) {
+    CellPos west = {curr_pos.row, curr_pos.col - 1};
+    Cell *west_cell = &maze->grid[Maze_Get_CellIndex(west, maze)];
+    if (west_cell->cell_state == STATE_SOLUTION) {
+      SDL_RenderFillRect(r, &west_half_rect);
+    }
+  }
+}
+static void DrawAndFill_Cell(CellPos cell_pos, Vector2 current_pos,
+                             MazeRender *maze_render, Maze *maze) {
 
   Cell curr_cell = maze->grid[Maze_Get_CellIndex(cell_pos, maze)];
   SDL_Renderer *r = maze_render->renderer;
@@ -91,14 +174,16 @@ static inline void DrawAndFill_Cell(CellPos cell_pos, Vector2 current_pos,
     break;
 
   case STATE_SOLUTION:
-    fill_col = COL_STATE_SOLUTION;
-    float offset = 0;
-    rect = (SDL_FRect){curr_x + offset, curr_y + offset, cell_size - offset,
-                       cell_size - offset};
+    fill_col = COLOR_NONE;
+
+    // Different logic is used to set solution
+    Render_Solution_Line(r, cell_pos, current_pos, cell_size, maze,
+                         maze_render->wall_thickness);
     break;
 
   case STATE_GENERATED:
     fill_col = COL_STATE_GENERATED;
+    break;
   }
 
   if (fill_col.a > 0) {
@@ -161,6 +246,25 @@ void Maze_Render(MazeRender *maze_render, Maze *maze) {
     curr_x = start_x;
     curr_y += cell_size;
   }
+
+  // Displaying the start and end_cells with specific color
+  Vector2 start = {(maze->start_cell.col * cell_size) + start_x,
+                   (maze->start_cell.row * cell_size) + start_y};
+  Vector2 end = {(maze->end_cell.col * cell_size) + start_x,
+                 (maze->end_cell.row * cell_size) + start_y};
+  float wall_thick = maze_render->wall_thickness;
+
+  SDL_FRect start_rect = {start.x + wall_thick, start.y + wall_thick,
+                          cell_size - wall_thick, cell_size - wall_thick};
+  SDL_FRect end_rect = {end.x + wall_thick, end.y + wall_thick,
+                        cell_size - wall_thick, cell_size - wall_thick};
+
+  SDL_Color start_col = COL_START_CELL;
+  SDL_SetRenderDrawColor(r, start_col.r, start_col.g, start_col.b, start_col.a);
+  SDL_RenderFillRect(r, &start_rect);
+  SDL_Color end_col = COL_END_CELL;
+  SDL_SetRenderDrawColor(r, end_col.r, end_col.g, end_col.b, end_col.a);
+  SDL_RenderFillRect(r, &end_rect);
 }
 
 void Maze_Render_Destroy(MazeRender *maze_render) { free(maze_render); }

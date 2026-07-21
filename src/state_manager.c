@@ -6,15 +6,15 @@
 #include "../include/solving.h"
 #include <SDL3/SDL_events.h>
 #include <SDL3/SDL_render.h>
+#include <SDL3/SDL_stdinc.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-#define CELL_SIZE 10
+#define CELL_SIZE 5
 #define MAZE_START_POS ((Vector2){45, 45})
-#define COLUMNS 80
-#define ROWS 80
-#define WALL_THICKNESS 3
-#define WALL_COLOR COLOR_BLACK
+#define COLUMNS 160
+#define ROWS 160
+#define WALL_THICKNESS 1
 
 typedef enum { MODE_NONE, MODE_GENERATING, MAZE_READY, MODE_SOLVING } MazeMode;
 
@@ -36,13 +36,21 @@ struct State {
   MazeMode maze_mode;
 };
 
+void Set_Maze_Ends(Maze *maze) {
+
+};
+
 State *State_Create(SDL_Renderer *renderer, double time_delay_ms) {
   State *state = calloc(1, sizeof(State));
-  CellPos start_cell = {0, 0};
-  CellPos end_cell = {ROWS - 1, COLUMNS - 1};
+  CellPos start_cell = {SDL_rand(ROWS), SDL_rand(COLUMNS)};
+  CellPos end_cell = {SDL_rand(ROWS), SDL_rand(COLUMNS)};
+
+  // CellPos start_cell = {0, 0};
+  // CellPos end_cell = {ROWS, COLUMNS};
+
   state->maze = Maze_Create(ROWS, COLUMNS, start_cell, end_cell);
   state->maze_render = Maze_Render_Create(renderer, CELL_SIZE, MAZE_START_POS,
-                                          WALL_THICKNESS, COLOR_BLACK);
+                                          WALL_THICKNESS, COL_WALL);
   state->maze_mode = MODE_NONE;
   state->time_delay = time_delay_ms;
   state->current_events = NULL;

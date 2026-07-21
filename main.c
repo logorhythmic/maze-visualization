@@ -12,7 +12,7 @@
 #define SCR_WIDTH 900
 #define SCR_HEIGHT 900
 
-#define TIME_DELAY_MS 10
+#define TIME_DELAY_MS 100
 
 int main() {
 

@@ -69,6 +69,7 @@ MazeEvents *DFSSolve_Generate_MazeEvents(Maze *maze) {
 
     // Checking if target has been reached
     if (current.row == target.row && current.col == target.col) {
+      Maze_Add_Event(events, current, neighbour, STATE_SOLUTION, ACTION_NONE);
       break;
     }
 
