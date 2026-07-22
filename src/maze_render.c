@@ -72,7 +72,7 @@ static void Render_Solution_Line(SDL_Renderer *r, CellPos curr_pos,
 
   float actual_size = cell_size;
 
-  float mid_rect_area = 0.45f;
+  float mid_rect_area = 0.30f;
 
   float inner_start_x = (float)top_left.x + wall_thickness;
   float inner_start_y = (float)top_left.y + wall_thickness;

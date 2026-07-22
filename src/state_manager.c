@@ -10,11 +10,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define CELL_SIZE 5
+#define CELL_SIZE 25
 #define MAZE_START_POS ((Vector2){45, 45})
-#define COLUMNS 160
-#define ROWS 160
-#define WALL_THICKNESS 1
+#define COLUMNS 32
+#define ROWS 32
+#define WALL_THICKNESS 4
 
 typedef enum { MODE_NONE, MODE_GENERATING, MAZE_READY, MODE_SOLVING } MazeMode;
 
