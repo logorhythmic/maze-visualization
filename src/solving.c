@@ -91,6 +91,7 @@ MazeEvents *DFSSolve_Generate_MazeEvents(Maze *maze) {
     else {
       // Popping Element from the stack
       top -= 1;
+      Maze_Add_Event(events, current, neighbour, STATE_SOLUTION, ACTION_NONE);
       Maze_Add_Event(events, current, neighbour, STATE_BACKTRACKED,
                      ACTION_NONE);
     }
