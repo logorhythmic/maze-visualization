@@ -7,9 +7,10 @@ typedef struct {
 } CellPos;
 
 typedef enum {
-  STATE_BLANK,
-  STATE_GENERATED,
-  STATE_VISITED,
+  STATE_BLANK,         // When the Maze is a grid
+  STATE_GENERATED,     // When Maze has been generated
+  STATE_GEN_VISITED,   // When Cell has been visited by gen algo
+  STATE_SOLVE_VISITED, // When Cell has been visited by solving algo
   STATE_BACKTRACKED,
   STATE_SOLUTION,
 } CellState;
@@ -60,6 +61,14 @@ static inline bool Maze_Is_CellValid(CellPos cell, Maze *maze) {
   return false;
 }
 
+static inline bool Maze_Is_SameCell(CellPos a, CellPos b) {
+
+  if (a.row == b.row && a.col == b.col) {
+    return true;
+  }
+  return false;
+}
+
 static inline int Maze_Get_CellIndex(CellPos cp, Maze *maze) {
   return cp.row * maze->columns + cp.col;
 }
@@ -76,6 +85,9 @@ void Maze_Destroy(Maze *maze);
 
 //------------------------Maze Events------------------------------------
 MazeEvents *Maze_Create_Events(int capacity);
+
+// Expanding the number of events that Maze Events can hold
+bool Maze_Expand_Events(MazeEvents *old_events, int final_capacity);
 
 void Maze_Destroy_Events(MazeEvents *maze_events);
 

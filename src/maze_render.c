@@ -68,11 +68,9 @@ static void Render_Solution_Line(SDL_Renderer *r, CellPos curr_pos,
 
   Cell *cell = &maze->grid[Maze_Get_CellIndex(curr_pos, maze)];
 
-  SDL_Color fill_col = COL_STATE_SOLUTION;
-
   float actual_size = cell_size;
 
-  float mid_rect_area = 0.30f;
+  float mid_rect_area = 0.20f;
 
   float inner_start_x = (float)top_left.x + wall_thickness;
   float inner_start_y = (float)top_left.y + wall_thickness;
@@ -104,6 +102,15 @@ static void Render_Solution_Line(SDL_Renderer *r, CellPos curr_pos,
                               offset + wall_thickness, mid_rect_size};
 
   // Render Middle Cell
+  SDL_Color fill_col = COLOR_RENDER_BACKGROUND;
+
+  if (cell->cell_state == STATE_SOLUTION) {
+    fill_col = COL_STATE_SOLUTION;
+  }
+  if (cell->cell_state == STATE_SOLVE_VISITED) {
+    fill_col = COL_STATE_SOLVE_VISITED;
+  }
+
   SDL_SetRenderDrawColor(r, fill_col.r, fill_col.g, fill_col.b, fill_col.a);
   SDL_RenderFillRect(r, &centre_rect);
 
@@ -111,7 +118,8 @@ static void Render_Solution_Line(SDL_Renderer *r, CellPos curr_pos,
   if (cell->path_north) {
     CellPos north = {curr_pos.row - 1, curr_pos.col};
     Cell *north_cell = &maze->grid[Maze_Get_CellIndex(north, maze)];
-    if (north_cell->cell_state == STATE_SOLUTION) {
+    if (north_cell->cell_state == STATE_SOLVE_VISITED ||
+        north_cell->cell_state == STATE_SOLUTION) {
       SDL_RenderFillRect(r, &north_half_rect);
     }
   }
@@ -119,7 +127,8 @@ static void Render_Solution_Line(SDL_Renderer *r, CellPos curr_pos,
   if (cell->path_south) {
     CellPos south = {curr_pos.row + 1, curr_pos.col};
     Cell *south_cell = &maze->grid[Maze_Get_CellIndex(south, maze)];
-    if (south_cell->cell_state == STATE_SOLUTION) {
+    if (south_cell->cell_state == STATE_SOLVE_VISITED ||
+        south_cell->cell_state == STATE_SOLUTION) {
       SDL_RenderFillRect(r, &south_half_rect);
     }
   }
@@ -127,7 +136,8 @@ static void Render_Solution_Line(SDL_Renderer *r, CellPos curr_pos,
   if (cell->path_east) {
     CellPos east = {curr_pos.row, curr_pos.col + 1};
     Cell *east_cell = &maze->grid[Maze_Get_CellIndex(east, maze)];
-    if (east_cell->cell_state == STATE_SOLUTION) {
+    if (east_cell->cell_state == STATE_SOLVE_VISITED ||
+        east_cell->cell_state == STATE_SOLUTION) {
       SDL_RenderFillRect(r, &east_half_rect);
     }
   }
@@ -135,11 +145,13 @@ static void Render_Solution_Line(SDL_Renderer *r, CellPos curr_pos,
   if (cell->path_west) {
     CellPos west = {curr_pos.row, curr_pos.col - 1};
     Cell *west_cell = &maze->grid[Maze_Get_CellIndex(west, maze)];
-    if (west_cell->cell_state == STATE_SOLUTION) {
+    if (west_cell->cell_state == STATE_SOLVE_VISITED ||
+        west_cell->cell_state == STATE_SOLUTION) {
       SDL_RenderFillRect(r, &west_half_rect);
     }
   }
 }
+
 static void DrawAndFill_Cell(CellPos cell_pos, Vector2 current_pos,
                              MazeRender *maze_render, Maze *maze) {
 
@@ -169,8 +181,14 @@ static void DrawAndFill_Cell(CellPos cell_pos, Vector2 current_pos,
     fill_col = COL_STATE_BACKTRACKED;
     break;
 
-  case STATE_VISITED:
-    fill_col = COL_STATE_VISITED;
+  case STATE_SOLVE_VISITED:
+    fill_col = COLOR_NONE;
+    Render_Solution_Line(r, cell_pos, current_pos, cell_size, maze,
+                         maze_render->wall_thickness);
+    break;
+
+  case STATE_GEN_VISITED:
+    fill_col = COL_STATE_GEN_VISITED;
     break;
 
   case STATE_SOLUTION:

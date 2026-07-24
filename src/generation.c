@@ -73,7 +73,7 @@ MazeEvents *DFSGen_Generate_MazeEvents(Maze *maze) {
       visited_cells[index] = true;
 
       // 3. Changing state of cell
-      CellState cell_state = STATE_VISITED;
+      CellState cell_state = STATE_GEN_VISITED;
 
       // 4. Breaking wall between current cell and neighbour cell
       CellPos cell1 = curr_cell;

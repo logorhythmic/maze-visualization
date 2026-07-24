@@ -89,6 +89,17 @@ MazeEvents *Maze_Create_Events(int capacity) {
   return maze_events;
 }
 
+bool Maze_Expand_Events(MazeEvents *old_events, int final_capacity) {
+  Event *final_events =
+      realloc(old_events->events, final_capacity * sizeof(Event));
+  if (final_events == NULL) {
+    return false;
+  }
+  old_events->events = final_events;
+  old_events->capacity = final_capacity;
+  return true;
+}
+
 void Maze_Destroy_Events(MazeEvents *maze_events) {
   if (maze_events == NULL) {
     return;

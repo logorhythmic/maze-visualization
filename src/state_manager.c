@@ -42,11 +42,11 @@ void Set_Maze_Ends(Maze *maze) {
 
 State *State_Create(SDL_Renderer *renderer, double time_delay_ms) {
   State *state = calloc(1, sizeof(State));
-  CellPos start_cell = {SDL_rand(ROWS), SDL_rand(COLUMNS)};
-  CellPos end_cell = {SDL_rand(ROWS), SDL_rand(COLUMNS)};
+  // CellPos start_cell = {SDL_rand(ROWS), SDL_rand(COLUMNS)};
+  // CellPos end_cell = {SDL_rand(ROWS), SDL_rand(COLUMNS)};
 
-  // CellPos start_cell = {0, 0};
-  // CellPos end_cell = {ROWS, COLUMNS};
+  CellPos start_cell = {0, 0};
+  CellPos end_cell = {ROWS - 1, COLUMNS - 1};
 
   state->maze = Maze_Create(ROWS, COLUMNS, start_cell, end_cell);
   state->maze_render = Maze_Render_Create(renderer, CELL_SIZE, MAZE_START_POS,
@@ -110,6 +110,36 @@ void Event_DFSSolve(State *state) {
   }
 }
 
+void Event_BFSSolve(State *state) {
+
+  if (state->maze_mode != MAZE_READY) {
+    printf("Maze has not been generated. Generate the maze first\n");
+    return;
+  }
+
+  // Destroy previous events if exist (To prevent memory leaks)
+  if (state->current_events != NULL) {
+    Maze_Destroy_Events(state->current_events);
+  }
+
+  printf("Using BFS Solve now\n");
+
+  // Need to reset all Cell fills
+  Maze_SetAll_CellState(state->maze, STATE_GENERATED);
+
+  MazeEvents *BFSSolve_Events = BFSSolve_Generate_MazeEvents(state->maze);
+  state->current_events = BFSSolve_Events;
+
+  // Set MazeMode to solving
+  state->maze_mode = MODE_SOLVING;
+
+  // If not being animated, display the final solution
+  if (!state->animate) {
+    Maze_StepAll_Event(state->current_events, state->maze);
+    state->maze_mode = MAZE_READY;
+  }
+}
+
 void State_Process_Event(State *state, const SDL_Event *event) {
 
   //------------------------------ Key Pressess-------------------------------
@@ -126,8 +156,12 @@ void State_Process_Event(State *state, const SDL_Event *event) {
 
   case SDLK_1:
     Event_DFSSolve(state);
-  }
+    break;
 
+  case SDLK_2:
+    Event_BFSSolve(state);
+    break;
+  }
   //---------------------------------------------------------------------------
 
   //
@@ -170,6 +204,7 @@ void State_Render(State *state) {
 
 void State_Destroy(State *state) {
   Maze_Render_Destroy(state->maze_render);
+  Maze_Destroy_Events(state->current_events);
   Maze_Destroy(state->maze);
   free(state);
 }
