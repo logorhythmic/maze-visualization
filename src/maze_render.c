@@ -58,6 +58,44 @@ MazeRender *Maze_Render_Create(SDL_Renderer *renderer, int cell_size,
   return maze_render;
 }
 
+static bool can_connect(CellState current_state, CellState neighbour_state) {
+  return (neighbour_state == STATE_SOLVE_VISITED ||
+          neighbour_state == STATE_SOLUTION);
+}
+
+static void render_connection_rect(CellState current_state,
+                                   CellState neighbour_state,
+                                   SDL_Color fill_col, SDL_FRect *rect,
+                                   SDL_Renderer *r) {
+
+  SDL_Color temp_fill;
+  if (current_state == neighbour_state) {
+    temp_fill = fill_col;
+    SDL_SetRenderDrawColor(r, temp_fill.r, temp_fill.g, temp_fill.b,
+                           temp_fill.a);
+    SDL_RenderFillRect(r, rect);
+    return;
+  }
+
+  if (current_state == STATE_SOLUTION &&
+      neighbour_state == STATE_SOLVE_VISITED) {
+    temp_fill = COL_STATE_SOLVE_VISITED;
+    SDL_SetRenderDrawColor(r, temp_fill.r, temp_fill.g, temp_fill.b,
+                           temp_fill.a);
+    SDL_RenderFillRect(r, rect);
+    return;
+  }
+
+  if (current_state == STATE_SOLVE_VISITED &&
+      neighbour_state == STATE_SOLUTION) {
+    temp_fill = COL_STATE_SOLVE_VISITED;
+    SDL_SetRenderDrawColor(r, temp_fill.r, temp_fill.g, temp_fill.b,
+                           temp_fill.a);
+    SDL_RenderFillRect(r, rect);
+    return;
+  }
+}
+
 static void Render_Solution_Line(SDL_Renderer *r, CellPos curr_pos,
                                  Vector2 top_left, int cell_size, Maze *maze,
                                  int wall_thickness) {
@@ -70,7 +108,7 @@ static void Render_Solution_Line(SDL_Renderer *r, CellPos curr_pos,
 
   float actual_size = cell_size;
 
-  float mid_rect_area = 0.20f;
+  float mid_rect_area = 0.70f;
 
   float inner_start_x = (float)top_left.x + wall_thickness;
   float inner_start_y = (float)top_left.y + wall_thickness;
@@ -111,45 +149,39 @@ static void Render_Solution_Line(SDL_Renderer *r, CellPos curr_pos,
     fill_col = COL_STATE_SOLVE_VISITED;
   }
 
-  SDL_SetRenderDrawColor(r, fill_col.r, fill_col.g, fill_col.b, fill_col.a);
-  SDL_RenderFillRect(r, &centre_rect);
+  // Check if path exists. If yes, then render a connection rect to show the
+  // path
 
-  // Check which adjacent cell is it connected to
   if (cell->path_north) {
     CellPos north = {curr_pos.row - 1, curr_pos.col};
     Cell *north_cell = &maze->grid[Maze_Get_CellIndex(north, maze)];
-    if (north_cell->cell_state == STATE_SOLVE_VISITED ||
-        north_cell->cell_state == STATE_SOLUTION) {
-      SDL_RenderFillRect(r, &north_half_rect);
-    }
+    render_connection_rect(cell->cell_state, north_cell->cell_state, fill_col,
+                           &north_half_rect, r);
   }
   //
   if (cell->path_south) {
     CellPos south = {curr_pos.row + 1, curr_pos.col};
     Cell *south_cell = &maze->grid[Maze_Get_CellIndex(south, maze)];
-    if (south_cell->cell_state == STATE_SOLVE_VISITED ||
-        south_cell->cell_state == STATE_SOLUTION) {
-      SDL_RenderFillRect(r, &south_half_rect);
-    }
+    render_connection_rect(cell->cell_state, south_cell->cell_state, fill_col,
+                           &south_half_rect, r);
   }
   //
   if (cell->path_east) {
     CellPos east = {curr_pos.row, curr_pos.col + 1};
     Cell *east_cell = &maze->grid[Maze_Get_CellIndex(east, maze)];
-    if (east_cell->cell_state == STATE_SOLVE_VISITED ||
-        east_cell->cell_state == STATE_SOLUTION) {
-      SDL_RenderFillRect(r, &east_half_rect);
-    }
+    render_connection_rect(cell->cell_state, east_cell->cell_state, fill_col,
+                           &east_half_rect, r);
   }
 
   if (cell->path_west) {
     CellPos west = {curr_pos.row, curr_pos.col - 1};
     Cell *west_cell = &maze->grid[Maze_Get_CellIndex(west, maze)];
-    if (west_cell->cell_state == STATE_SOLVE_VISITED ||
-        west_cell->cell_state == STATE_SOLUTION) {
-      SDL_RenderFillRect(r, &west_half_rect);
-    }
+    render_connection_rect(cell->cell_state, west_cell->cell_state, fill_col,
+                           &west_half_rect, r);
   }
+
+  SDL_SetRenderDrawColor(r, fill_col.r, fill_col.g, fill_col.b, fill_col.a);
+  SDL_RenderFillRect(r, &centre_rect);
 }
 
 static void DrawAndFill_Cell(CellPos cell_pos, Vector2 current_pos,
