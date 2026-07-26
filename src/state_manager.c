@@ -49,8 +49,9 @@ State *State_Create(SDL_Renderer *renderer, double time_delay_ms) {
   CellPos end_cell = {ROWS - 1, COLUMNS - 1};
 
   state->maze = Maze_Create(ROWS, COLUMNS, start_cell, end_cell);
-  state->maze_render = Maze_Render_Create(renderer, CELL_SIZE, MAZE_START_POS,
-                                          WALL_THICKNESS, COL_WALL);
+  state->maze_render =
+      Maze_Render_Create(renderer, CELL_SIZE, MAZE_START_POS, WALL_THICKNESS,
+                         COL_WALL, COL_STATE_GENERATED);
   state->maze_mode = MODE_NONE;
   state->time_delay = time_delay_ms;
   state->current_events = NULL;

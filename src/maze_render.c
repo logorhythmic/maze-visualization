@@ -8,6 +8,7 @@
 
 struct MazeRender {
   SDL_Renderer *renderer;
+  SDL_Color generated_bg_color;
   SDL_Color wall_color;
   int wall_thickness;
   int cell_size;
@@ -47,10 +48,12 @@ static void DrawLineThick(SDL_Renderer *r, Line line, SDL_Color col,
 
 MazeRender *Maze_Render_Create(SDL_Renderer *renderer, int cell_size,
                                Vector2 start_pos, int wall_thickness,
-                               SDL_Color wall_color) {
+                               SDL_Color wall_color,
+                               SDL_Color generated_bg_color) {
   MazeRender *maze_render = calloc(1, sizeof(MazeRender));
   maze_render->renderer = renderer;
   maze_render->wall_color = wall_color;
+  maze_render->generated_bg_color = generated_bg_color;
   maze_render->wall_thickness = wall_thickness;
   maze_render->cell_size = cell_size;
   maze_render->start_pos_x = start_pos.x;
@@ -283,6 +286,13 @@ void Maze_Render(MazeRender *maze_render, Maze *maze) {
   int curr_y = start_y;
   int cell_size = maze_render->cell_size;
   SDL_Renderer *r = maze_render->renderer;
+
+  // Drawing the generated color rect behind the maze
+  SDL_FRect full_maze_rect = {start_x, start_y, maze->columns * cell_size,
+                              maze->rows * cell_size};
+  SDL_Color bg_col = maze_render->generated_bg_color;
+  SDL_SetRenderDrawColor(r, bg_col.r, bg_col.g, bg_col.b, bg_col.a);
+  SDL_RenderFillRect(r, &full_maze_rect);
 
   for (int row = 0; row < maze->rows; row++) {
     for (int col = 0; col < maze->columns; col++) {

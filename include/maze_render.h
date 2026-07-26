@@ -1,5 +1,6 @@
 #pragma once
 #include "maze.h"
+#include <SDL3/SDL_pixels.h>
 #include <SDL3/SDL_render.h>
 
 typedef struct MazeRender MazeRender;
@@ -11,7 +12,8 @@ typedef struct {
 
 MazeRender *Maze_Render_Create(SDL_Renderer *renderer, int cell_size,
                                Vector2 maze_start_pos, int wall_thickness,
-                               SDL_Color wall_color);
+                               SDL_Color wall_color,
+                               SDL_Color generated_bg_color);
 
 void Maze_Render(MazeRender *maze_render, Maze *maze);
 
