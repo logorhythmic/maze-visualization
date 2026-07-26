@@ -44,10 +44,10 @@ bool Get_ValidNeighbour(CellPos curr_pos, CellPos *neighbour_pos,
 }
 
 MazeEvents *DFSGen_Generate_MazeEvents(Maze *maze) {
-  int total_events = maze->total_cells * 2;
+  int total_events = maze->total_cells * 4;
   int rows = maze->rows;
   int columns = maze->columns;
-  MazeEvents *events = Maze_Create_Events(total_events);
+  MazeEvents *events = MazeEvents_Create(total_events);
 
   CellPos start_pos = maze->start_cell;
 
@@ -80,8 +80,13 @@ MazeEvents *DFSGen_Generate_MazeEvents(Maze *maze) {
       CellPos cell2 = neighbour;
       CellAction cell_action = BREAK_WALL;
 
-      // 5. Adding event to MazeEvents
-      if (!Maze_Add_Event(events, cell1, cell2, cell_state, cell_action)) {
+      // 5. Adding State Change event to MazeEvents
+      if (!MazeEvents_Add_StateChange(events, cell1, cell_state)) {
+        printf("Somehow MazeEvents full. Wtf\n");
+      }
+
+      // 6. Adding BREAK_WALL Cell Action event to MazeEvents
+      if (!MazeEvents_Add_CellAction(events, cell1, cell2, cell_action)) {
         printf("Somehow MazeEvents full. Wtf\n");
       }
     }
@@ -90,21 +95,19 @@ MazeEvents *DFSGen_Generate_MazeEvents(Maze *maze) {
       // This logic is for backtracking
 
       // 1. Popping the element from the stack
+
       CellPos cell1 = current_path[top];
-      CellPos cell2 = {-1, -1};
       top -= 1;
 
       // 2. Changing Cell state
       CellState cell_state = STATE_BACKTRACKED;
 
-      // 3. No Cell action
-      CellAction cell_action = ACTION_NONE;
-
       // 3. Adding to MazeEvents
-      Maze_Add_Event(events, cell1, cell2, cell_state, cell_action);
+      MazeEvents_Add_StateChange(events, cell1, cell_state);
     }
   }
 
+  printf("DFS SOLVE EVENTS GENERATED\n");
   free(current_path);
   free(visited_cells);
   return events;

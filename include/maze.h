@@ -1,11 +1,6 @@
 #pragma once
 #include <stdbool.h>
 
-typedef struct {
-  int row;
-  int col;
-} CellPos;
-
 typedef enum {
   STATE_BLANK,         // When the Maze is a grid
   STATE_GENERATED,     // When Maze has been generated
@@ -15,58 +10,40 @@ typedef enum {
   STATE_SOLUTION,
 } CellState;
 
-typedef struct {
+typedef struct CellPos CellPos;
+typedef struct Cell Cell;
+typedef struct Maze Maze;
+
+struct CellPos {
+  int row;
+  int col;
+};
+
+struct Cell {
   CellPos cell_pos;
   CellState cell_state;
   bool path_north;
   bool path_south;
   bool path_east;
   bool path_west;
-} Cell;
+};
 
-typedef struct {
+struct Maze {
   CellPos start_cell;
   CellPos end_cell;
   Cell *grid;
   int rows;
   int columns;
   int total_cells;
-} Maze;
-
-typedef enum {
-  ACTION_NONE,
-  BREAK_WALL,
-} CellAction;
-
-typedef struct {
-  CellPos cell1;
-  CellPos cell2;
-  CellState cell_state;
-  CellAction cell_action;
-} Event;
-
-typedef struct {
-  Event *events;
-  int current_event;
-  int total_events;
-  int capacity;
-} MazeEvents;
+};
 
 static inline bool Maze_Is_CellValid(CellPos cell, Maze *maze) {
-  if (cell.row < maze->rows && cell.row >= 0) {
-    if (cell.col < maze->columns && cell.col >= 0) {
-      return true;
-    }
-  }
-  return false;
+  return (cell.row >= 0 && cell.row < maze->rows && cell.col >= 0 &&
+          cell.col < maze->columns);
 }
 
 static inline bool Maze_Is_SameCell(CellPos a, CellPos b) {
-
-  if (a.row == b.row && a.col == b.col) {
-    return true;
-  }
-  return false;
+  return (a.row == b.row && a.col == b.col);
 }
 
 static inline int Maze_Get_CellIndex(CellPos cp, Maze *maze) {
@@ -75,28 +52,12 @@ static inline int Maze_Get_CellIndex(CellPos cp, Maze *maze) {
 
 Maze *Maze_Create(int rows, int columns, CellPos start_cell, CellPos end_cell);
 
-void Maze_Break_Wall(CellPos cell1, CellPos cell2, Maze *maze);
+void Maze_Break_Wall(Maze *maze, CellPos cell1, CellPos cell2);
 
 void Maze_Reset(Maze *maze);
+
+void Maze_Set_CellState(Maze *maze, CellPos cell_pos, CellState cell_state);
 
 void Maze_SetAll_CellState(Maze *maze, CellState cell_state);
 
 void Maze_Destroy(Maze *maze);
-
-//------------------------Maze Events------------------------------------
-MazeEvents *Maze_Create_Events(int capacity);
-
-// Expanding the number of events that Maze Events can hold
-bool Maze_Expand_Events(MazeEvents *old_events, int final_capacity);
-
-void Maze_Destroy_Events(MazeEvents *maze_events);
-
-bool Maze_Add_Event(MazeEvents *maze_events, CellPos cell1, CellPos cell2,
-                    CellState cell_state, CellAction cell_action);
-
-bool Maze_Step_Event(MazeEvents *maze_events, Maze *maze);
-
-void Maze_Reset_EventNumber(MazeEvents *maze_events);
-
-void Maze_StepAll_Event(MazeEvents *maze_events, Maze *maze);
-//----------------------------------------------------------------------

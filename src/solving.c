@@ -54,8 +54,7 @@ MazeEvents *DFSSolve_Generate_MazeEvents(Maze *maze) {
   // To keep track of visited cells
   bool *visited = calloc(maze->total_cells, sizeof(bool));
 
-  MazeEvents *events = Maze_Create_Events(maze->total_cells * 2);
-
+  MazeEvents *events = MazeEvents_Create(maze->total_cells * 2);
   CellPos start = maze->start_cell;
   CellPos target = maze->end_cell;
 
@@ -69,7 +68,10 @@ MazeEvents *DFSSolve_Generate_MazeEvents(Maze *maze) {
 
     // Checking if target has been reached
     if (current.row == target.row && current.col == target.col) {
-      Maze_Add_Event(events, current, neighbour, STATE_SOLUTION, ACTION_NONE);
+
+      // Adding State change
+      MazeEvents_Add_StateChange(events, current, STATE_SOLUTION);
+
       break;
     }
 
@@ -84,16 +86,15 @@ MazeEvents *DFSSolve_Generate_MazeEvents(Maze *maze) {
       visited[Maze_Get_CellIndex(neighbour, maze)] = true;
 
       // Adding a MazeEvent
-      Maze_Add_Event(events, current, neighbour, STATE_SOLUTION, ACTION_NONE);
+      MazeEvents_Add_StateChange(events, current, STATE_SOLUTION);
     }
 
     // Backtracking
     else {
       // Popping Element from the stack
       top -= 1;
-      Maze_Add_Event(events, current, neighbour, STATE_SOLUTION, ACTION_NONE);
-      Maze_Add_Event(events, current, neighbour, STATE_BACKTRACKED,
-                     ACTION_NONE);
+      MazeEvents_Add_StateChange(events, current, STATE_SOLUTION);
+      MazeEvents_Add_StateChange(events, current, STATE_BACKTRACKED);
     }
   }
   printf("Ending the while loop\n");
@@ -174,7 +175,7 @@ MazeEvents *BFSSolve_Generate_MazeEvents(Maze *maze) {
   // To store the path history
   CellPos *came_from = calloc(maze->total_cells, sizeof(CellPos));
 
-  MazeEvents *events = Maze_Create_Events(maze->total_cells * 2);
+  MazeEvents *events = MazeEvents_Create(maze->total_cells * 2);
 
   frontier[rear++] = maze->start_cell;
 
@@ -186,8 +187,7 @@ MazeEvents *BFSSolve_Generate_MazeEvents(Maze *maze) {
     CellPos neighbour_pos = {-1, -1};
 
     if (Maze_Is_SameCell(current_pos, maze->end_cell)) {
-      Maze_Add_Event(events, current_pos, neighbour_pos, STATE_SOLVE_VISITED,
-                     ACTION_NONE);
+      MazeEvents_Add_StateChange(events, current_pos, STATE_SOLVE_VISITED);
 
       int path_length;
       CellPos *final_path = obtain_final_path(came_from, &path_length, maze);
@@ -195,7 +195,7 @@ MazeEvents *BFSSolve_Generate_MazeEvents(Maze *maze) {
       // Need to increase size of event array to add in the final path
       // visualization
 
-      if (!Maze_Expand_Events(events, (maze->total_cells * 2) + path_length)) {
+      if (!MazeEvents_Expand(events, (maze->total_cells * 2) + path_length)) {
         printf(
             "Maze failed to expand events. Can not visualize the final path\n");
         return NULL;
@@ -203,8 +203,7 @@ MazeEvents *BFSSolve_Generate_MazeEvents(Maze *maze) {
 
       CellPos neighbour = {-1, -1};
       for (int i = 0; i < path_length; i++) {
-        Maze_Add_Event(events, final_path[i], neighbour, STATE_SOLUTION,
-                       ACTION_NONE);
+        MazeEvents_Add_StateChange(events, final_path[i], STATE_SOLUTION);
       }
 
       free(final_path);
@@ -224,8 +223,7 @@ MazeEvents *BFSSolve_Generate_MazeEvents(Maze *maze) {
       came_from[Maze_Get_CellIndex(neighbour_pos, maze)] = current_pos;
     }
     // Adding Maze Event
-    Maze_Add_Event(events, current_pos, neighbour_pos, STATE_SOLVE_VISITED,
-                   ACTION_NONE);
+    MazeEvents_Add_StateChange(events, current_pos, STATE_SOLVE_VISITED);
 
     // Incrementing depth
     depth += 1;

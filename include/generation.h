@@ -1,5 +1,6 @@
 #pragma once
 #include "maze.h"
+#include "maze_events.h"
 
 /* Maze Generation using Randomized DFS
  */

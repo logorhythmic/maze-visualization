@@ -62,7 +62,7 @@ void Event_DFSGen(State *state) {
 
   // Destroy previous events if exist (To prevent memory leaks)
   if (state->current_events != NULL) {
-    Maze_Destroy_Events(state->current_events);
+    MazeEvents_Destroy(state->current_events);
   }
 
   // Current events are now populated with DFSGen_Events
@@ -76,7 +76,7 @@ void Event_DFSGen(State *state) {
 
   // If not being animated, display final Maze
   if (!state->animate) {
-    Maze_StepAll_Event(state->current_events, state->maze);
+    MazeEvents_StepAll(state->current_events, state->maze);
     state->maze_mode = MAZE_READY;
   }
 }
@@ -89,7 +89,7 @@ void Event_DFSSolve(State *state) {
 
   // Destroy previous events if exist (To prevent memory leaks)
   if (state->current_events != NULL) {
-    Maze_Destroy_Events(state->current_events);
+    MazeEvents_Destroy(state->current_events);
   }
 
   printf("Using DFS Solve now\n");
@@ -105,7 +105,7 @@ void Event_DFSSolve(State *state) {
 
   // If not being animated, display the final solution
   if (!state->animate) {
-    Maze_StepAll_Event(state->current_events, state->maze);
+    MazeEvents_StepAll(state->current_events, state->maze);
     state->maze_mode = MAZE_READY;
   }
 }
@@ -119,7 +119,7 @@ void Event_BFSSolve(State *state) {
 
   // Destroy previous events if exist (To prevent memory leaks)
   if (state->current_events != NULL) {
-    Maze_Destroy_Events(state->current_events);
+    MazeEvents_Destroy(state->current_events);
   }
 
   printf("Using BFS Solve now\n");
@@ -135,7 +135,7 @@ void Event_BFSSolve(State *state) {
 
   // If not being animated, display the final solution
   if (!state->animate) {
-    Maze_StepAll_Event(state->current_events, state->maze);
+    MazeEvents_StepAll(state->current_events, state->maze);
     state->maze_mode = MAZE_READY;
   }
 }
@@ -181,7 +181,7 @@ void State_Update(State *state, uint64_t delta_time_ms) {
       while (state->time_elapsed >= state->time_delay) {
         state->time_elapsed -= state->time_delay;
 
-        if (!Maze_Step_Event(state->current_events, state->maze)) {
+        if (!MazeEvents_Step(state->current_events, state->maze)) {
           printf("Animation finished\n");
           state->maze_mode = MAZE_READY;
           break;
@@ -191,7 +191,8 @@ void State_Update(State *state, uint64_t delta_time_ms) {
   } else {
     if (state->maze_mode == MODE_GENERATING ||
         state->maze_mode == MODE_SOLVING) {
-      Maze_StepAll_Event(state->current_events, state->maze);
+      MazeEvents_StepAll(state->current_events, state->maze);
+      printf("Animation turned off, stepped through all events\n");
       state->maze_mode = MAZE_READY;
     }
   }
@@ -204,7 +205,7 @@ void State_Render(State *state) {
 
 void State_Destroy(State *state) {
   Maze_Render_Destroy(state->maze_render);
-  Maze_Destroy_Events(state->current_events);
+  MazeEvents_Destroy(state->current_events);
   Maze_Destroy(state->maze);
   free(state);
 }

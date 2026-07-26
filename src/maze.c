@@ -47,7 +47,12 @@ void Maze_SetAll_CellState(Maze *maze, CellState cell_state) {
   }
 }
 
-void Maze_Break_Wall(CellPos cell1, CellPos cell2, Maze *maze) {
+void Maze_Set_CellState(Maze *maze, CellPos cell_pos, CellState cell_state) {
+  Cell *curr_cell = &maze->grid[get_cell_index(cell_pos, maze)];
+  curr_cell->cell_state = cell_state;
+}
+
+void Maze_Break_Wall(Maze *maze, CellPos cell1, CellPos cell2) {
   if (!Maze_Is_CellValid(cell1, maze) || !(Maze_Is_CellValid(cell2, maze))) {
     return;
   }
@@ -77,82 +82,6 @@ void Maze_Break_Wall(CellPos cell1, CellPos cell2, Maze *maze) {
       neighbour_cell->path_east = true;
     }
   }
-}
-
-MazeEvents *Maze_Create_Events(int capacity) {
-  MazeEvents *maze_events = calloc(1, sizeof(MazeEvents));
-  Event *events = calloc(capacity, sizeof(Event));
-  maze_events->events = events;
-  maze_events->current_event = 0;
-  maze_events->total_events = 0;
-  maze_events->capacity = capacity;
-  return maze_events;
-}
-
-bool Maze_Expand_Events(MazeEvents *old_events, int final_capacity) {
-  Event *final_events =
-      realloc(old_events->events, final_capacity * sizeof(Event));
-  if (final_events == NULL) {
-    return false;
-  }
-  old_events->events = final_events;
-  old_events->capacity = final_capacity;
-  return true;
-}
-
-void Maze_Destroy_Events(MazeEvents *maze_events) {
-  if (maze_events == NULL) {
-    return;
-  }
-  free(maze_events->events);
-  free(maze_events);
-}
-
-bool Maze_Add_Event(MazeEvents *maze_events, CellPos cell1, CellPos cell2,
-                    CellState cell_state, CellAction cell_action) {
-  if (maze_events->total_events >= maze_events->capacity) {
-    return false;
-  }
-  int curr_event = maze_events->total_events;
-  maze_events->events[curr_event].cell1 = cell1;
-  maze_events->events[curr_event].cell2 = cell2;
-  maze_events->events[curr_event].cell_state = cell_state;
-  maze_events->events[curr_event].cell_action = cell_action;
-  maze_events->total_events += 1;
-  return true;
-}
-
-bool Maze_Step_Event(MazeEvents *maze_events, Maze *maze) {
-
-  if (maze_events->current_event >= maze_events->total_events) {
-    maze_events->current_event = 0;
-    return false;
-  }
-  int curr_event = maze_events->current_event;
-  CellPos current_cell = maze_events->events[curr_event].cell1;
-  maze->grid[get_cell_index(current_cell, maze)].cell_state =
-      maze_events->events[curr_event].cell_state;
-
-  switch (maze_events->events[curr_event].cell_action) {
-  case ACTION_NONE:
-    break;
-
-  case BREAK_WALL:
-    Maze_Break_Wall(maze_events->events[curr_event].cell1,
-                    maze_events->events[curr_event].cell2, maze);
-    break;
-  }
-  maze_events->current_event += 1;
-  return true;
-}
-
-void Maze_StepAll_Event(MazeEvents *maze_events, Maze *maze) {
-  while (Maze_Step_Event(maze_events, maze))
-    ;
-}
-
-void Maze_Reset_EventNumber(MazeEvents *maze_events) {
-  maze_events->current_event = 0;
 }
 
 void Maze_Destroy(Maze *maze) {
