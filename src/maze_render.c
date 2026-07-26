@@ -10,6 +10,7 @@ struct MazeRender {
   SDL_Renderer *renderer;
   SDL_Color generated_bg_color;
   SDL_Color wall_color;
+  float soln_line_area;
   int wall_thickness;
   int cell_size;
   int start_pos_x;
@@ -48,13 +49,14 @@ static void DrawLineThick(SDL_Renderer *r, Line line, SDL_Color col,
 
 MazeRender *Maze_Render_Create(SDL_Renderer *renderer, int cell_size,
                                Vector2 start_pos, int wall_thickness,
-                               SDL_Color wall_color,
+                               SDL_Color wall_color, float soln_line_area,
                                SDL_Color generated_bg_color) {
   MazeRender *maze_render = calloc(1, sizeof(MazeRender));
   maze_render->renderer = renderer;
   maze_render->wall_color = wall_color;
   maze_render->generated_bg_color = generated_bg_color;
   maze_render->wall_thickness = wall_thickness;
+  maze_render->soln_line_area = soln_line_area;
   maze_render->cell_size = cell_size;
   maze_render->start_pos_x = start_pos.x;
   maze_render->start_pos_y = start_pos.y;
@@ -99,19 +101,22 @@ static void render_connection_rect(CellState current_state,
   }
 }
 
-static void Render_Solution_Line(SDL_Renderer *r, CellPos curr_pos,
-                                 Vector2 top_left, int cell_size, Maze *maze,
-                                 int wall_thickness) {
+static void Render_Solution_Line(CellPos curr_pos, Vector2 top_left,
+                                 MazeRender *maze_render, Maze *maze,
+                                 SDL_Color fill_col) {
   // Additive rendering
   //  We render a block in the middle of the cell
   //  Then depending on if the adjacent cells are solution cells, we add blocks
   //  to render
 
   Cell *cell = &maze->grid[Maze_Get_CellIndex(curr_pos, maze)];
+  float cell_size = maze_render->cell_size;
+  float wall_thickness = maze_render->wall_thickness;
+  SDL_Renderer *r = maze_render->renderer;
 
   float actual_size = cell_size;
 
-  float mid_rect_area = 0.70f;
+  float mid_rect_area = maze_render->soln_line_area;
 
   float inner_start_x = (float)top_left.x + wall_thickness;
   float inner_start_y = (float)top_left.y + wall_thickness;
@@ -141,16 +146,6 @@ static void Render_Solution_Line(SDL_Renderer *r, CellPos curr_pos,
 
   SDL_FRect west_half_rect = {final_x - offset, final_y,
                               offset + wall_thickness, mid_rect_size};
-
-  // Render Middle Cell
-  SDL_Color fill_col = COLOR_RENDER_BACKGROUND;
-
-  if (cell->cell_state == STATE_SOLUTION) {
-    fill_col = COL_STATE_SOLUTION;
-  }
-  if (cell->cell_state == STATE_SOLVE_VISITED) {
-    fill_col = COL_STATE_SOLVE_VISITED;
-  }
 
   // Check if path exists. If yes, then render a connection rect to show the
   // path
@@ -212,14 +207,18 @@ static void DrawAndFill_Cell(CellPos cell_pos, Vector2 current_pos,
     fill_col = COL_STATE_BLANK;
     break;
 
+  case STATE_LEAD_HEAD:
+    fill_col = COL_STATE_LEAD_HEAD;
+    break;
+
   case STATE_BACKTRACKED:
     fill_col = COL_STATE_BACKTRACKED;
     break;
 
   case STATE_SOLVE_VISITED:
     fill_col = COLOR_NONE;
-    Render_Solution_Line(r, cell_pos, current_pos, cell_size, maze,
-                         maze_render->wall_thickness);
+    Render_Solution_Line(cell_pos, current_pos, maze_render, maze,
+                         COL_STATE_SOLVE_VISITED);
     break;
 
   case STATE_GEN_VISITED:
@@ -230,8 +229,8 @@ static void DrawAndFill_Cell(CellPos cell_pos, Vector2 current_pos,
     fill_col = COLOR_NONE;
 
     // Different logic is used to set solution
-    Render_Solution_Line(r, cell_pos, current_pos, cell_size, maze,
-                         maze_render->wall_thickness);
+    Render_Solution_Line(cell_pos, current_pos, maze_render, maze,
+                         COL_STATE_SOLUTION);
     break;
 
   case STATE_GENERATED:

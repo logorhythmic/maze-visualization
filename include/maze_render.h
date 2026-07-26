@@ -12,7 +12,7 @@ typedef struct {
 
 MazeRender *Maze_Render_Create(SDL_Renderer *renderer, int cell_size,
                                Vector2 maze_start_pos, int wall_thickness,
-                               SDL_Color wall_color,
+                               SDL_Color wall_color, float soln_line_area,
                                SDL_Color generated_bg_color);
 
 void Maze_Render(MazeRender *maze_render, Maze *maze);

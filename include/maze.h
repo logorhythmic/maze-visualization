@@ -6,6 +6,7 @@ typedef enum {
   STATE_GENERATED,     // When Maze has been generated
   STATE_GEN_VISITED,   // When Cell has been visited by gen algo
   STATE_SOLVE_VISITED, // When Cell has been visited by solving algo
+  STATE_LEAD_HEAD,
   STATE_BACKTRACKED,
   STATE_SOLUTION,
 } CellState;
