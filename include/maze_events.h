@@ -5,9 +5,15 @@
 typedef struct Event Event;
 
 typedef struct MazeEvents MazeEvents;
+
 typedef enum {
   BREAK_WALL,
 } CellAction;
+
+typedef enum {
+  CATEGORY_GENERATION,
+  CATEGORY_SOLVING,
+} EventCategory;
 
 typedef enum {
   EVENT_STATE_CHANGE,

@@ -54,7 +54,7 @@ MazeEvents *DFSSolve_Generate_MazeEvents(Maze *maze) {
   // To keep track of visited cells
   bool *visited = calloc(maze->total_cells, sizeof(bool));
 
-  MazeEvents *events = MazeEvents_Create(maze->total_cells * 2);
+  MazeEvents *events = MazeEvents_Create(maze->total_cells * 4);
   CellPos start = maze->start_cell;
   CellPos target = maze->end_cell;
 
@@ -85,7 +85,7 @@ MazeEvents *DFSSolve_Generate_MazeEvents(Maze *maze) {
       // Adding neighbour to visited
       visited[Maze_Get_CellIndex(neighbour, maze)] = true;
 
-      // Adding a MazeEvent
+      // Adding MazeEvent
       MazeEvents_Add_StateChange(events, current, STATE_SOLUTION);
     }
 
@@ -94,7 +94,7 @@ MazeEvents *DFSSolve_Generate_MazeEvents(Maze *maze) {
       // Popping Element from the stack
       top -= 1;
       MazeEvents_Add_StateChange(events, current, STATE_SOLUTION);
-      MazeEvents_Add_StateChange(events, current, STATE_BACKTRACKED);
+      MazeEvents_Add_StateChange(events, current, STATE_GENERATED);
     }
   }
   printf("Ending the while loop\n");
@@ -201,7 +201,6 @@ MazeEvents *BFSSolve_Generate_MazeEvents(Maze *maze) {
         return NULL;
       }
 
-      CellPos neighbour = {-1, -1};
       for (int i = 0; i < path_length; i++) {
         MazeEvents_Add_StateChange(events, final_path[i], STATE_SOLUTION);
       }

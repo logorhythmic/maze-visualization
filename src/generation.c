@@ -44,7 +44,7 @@ bool Get_ValidNeighbour(CellPos curr_pos, CellPos *neighbour_pos,
 }
 
 MazeEvents *DFSGen_Generate_MazeEvents(Maze *maze) {
-  int total_events = maze->total_cells * 4;
+  int total_events = maze->total_cells * 10;
   int rows = maze->rows;
   int columns = maze->columns;
   MazeEvents *events = MazeEvents_Create(total_events);
@@ -60,6 +60,8 @@ MazeEvents *DFSGen_Generate_MazeEvents(Maze *maze) {
   while (top >= 0) {
     CellPos neighbour;
     CellPos curr_cell = current_path[top];
+    // setting current cell to lead head
+    // MazeEvents_Add_StateChange(events, curr_cell, STATE_LEAD_HEAD);
 
     if (Get_ValidNeighbour(curr_cell, &neighbour, visited_cells, maze)) {
       // This logic is for advancing
@@ -80,15 +82,16 @@ MazeEvents *DFSGen_Generate_MazeEvents(Maze *maze) {
       CellPos cell2 = neighbour;
       CellAction cell_action = BREAK_WALL;
 
-      // 5. Adding State Change event to MazeEvents
+      // 6. Adding State Generation Visited event to MazeEvents
       if (!MazeEvents_Add_StateChange(events, cell1, cell_state)) {
         printf("Somehow MazeEvents full. Wtf\n");
       }
 
-      // 6. Adding BREAK_WALL Cell Action event to MazeEvents
+      // 5. Adding BREAK_WALL Cell Action event to MazeEvents
       if (!MazeEvents_Add_CellAction(events, cell1, cell2, cell_action)) {
         printf("Somehow MazeEvents full. Wtf\n");
       }
+
     }
 
     else {
@@ -106,6 +109,8 @@ MazeEvents *DFSGen_Generate_MazeEvents(Maze *maze) {
       MazeEvents_Add_StateChange(events, cell1, cell_state);
     }
   }
+
+  Maze_SetAll_CellState(maze, STATE_GENERATED);
 
   printf("DFS SOLVE EVENTS GENERATED\n");
   free(current_path);

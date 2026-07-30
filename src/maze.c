@@ -43,13 +43,23 @@ void Maze_Reset(Maze *maze) {
 void Maze_SetAll_CellState(Maze *maze, CellState cell_state) {
   for (int i = 0; i < maze->total_cells; i++) {
     Cell *curr_cell = &maze->grid[i];
-    curr_cell->cell_state = cell_state;
+
+    if (cell_state == STATE_GENERATED || cell_state == STATE_BLANK) {
+      curr_cell->cell_state = cell_state;
+
+    } else {
+      curr_cell->cell_state |= cell_state;
+    }
   }
 }
 
 void Maze_Set_CellState(Maze *maze, CellPos cell_pos, CellState cell_state) {
   Cell *curr_cell = &maze->grid[get_cell_index(cell_pos, maze)];
-  curr_cell->cell_state = cell_state;
+  if (cell_state == STATE_GENERATED || cell_state == STATE_BLANK) {
+    curr_cell->cell_state = cell_state;
+    return;
+  }
+  curr_cell->cell_state |= cell_state;
 }
 
 void Maze_Break_Wall(Maze *maze, CellPos cell1, CellPos cell2) {

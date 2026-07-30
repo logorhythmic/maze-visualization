@@ -79,6 +79,7 @@ void Event_DFSGen(State *state) {
   // If not being animated, display final Maze
   if (!state->animate) {
     MazeEvents_StepAll(state->current_events, state->maze);
+    Maze_SetAll_CellState(state->maze, STATE_GENERATED);
     state->maze_mode = MAZE_READY;
   }
 }
