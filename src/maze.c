@@ -55,11 +55,19 @@ void Maze_SetAll_CellState(Maze *maze, CellState cell_state) {
 
 void Maze_Set_CellState(Maze *maze, CellPos cell_pos, CellState cell_state) {
   Cell *curr_cell = &maze->grid[get_cell_index(cell_pos, maze)];
+
   if (cell_state == STATE_GENERATED || cell_state == STATE_BLANK) {
     curr_cell->cell_state = cell_state;
     return;
   }
-  curr_cell->cell_state |= cell_state;
+
+  // Check if inversion needs to occur
+  if (cell_state & STATE_CLEAR_MASK) {
+    CellState state_to_remove = cell_state & ~STATE_CLEAR_MASK;
+    curr_cell->cell_state &= ~state_to_remove;
+  } else {
+    curr_cell->cell_state |= cell_state;
+  }
 }
 
 void Maze_Break_Wall(Maze *maze, CellPos cell1, CellPos cell2) {

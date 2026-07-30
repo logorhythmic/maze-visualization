@@ -4,6 +4,11 @@
 
 #define BASE_STATE_MASK 0x01
 
+#define STATE_CLEAR_MASK ((uint8_t)0x80)
+
+// Macro to convert a flag to its inverse
+#define UNSET_STATE(state) (((CellState)(state) | STATE_CLEAR_MASK))
+
 typedef enum {
 
   // First bit stores whether it is blank or generated
@@ -12,11 +17,11 @@ typedef enum {
   STATE_GENERATED = 0x01, // When Maze has been fully generated
 
   // Specific flags
-  STATE_GEN_VISITED = 1 << 2,   // When Cell has been visited by gen algo
-  STATE_SOLVE_VISITED = 1 << 3, // When Cell has been visited by solving algo
-  STATE_LEAD_HEAD = 1 << 4,
-  STATE_BACKTRACKED = 1 << 5,
-  STATE_SOLUTION = 1 << 6,
+  STATE_GEN_VISITED = 1 << 1,   // When Cell has been visited by gen algo
+  STATE_SOLVE_VISITED = 1 << 2, // When Cell has been visited by solving algo
+  STATE_LEAD_HEAD = 1 << 3,
+  STATE_BACKTRACKED = 1 << 4,
+  STATE_SOLUTION = 1 << 5,
 } CellState;
 
 typedef struct CellPos CellPos;

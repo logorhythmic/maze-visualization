@@ -168,8 +168,7 @@ static void draw_cell_fill_full(Vector2 top_left, SDL_Color fill_col,
   float inner_start_y = (float)top_left.y + offset;
 
   SDL_FRect rect = {inner_start_x + wall_thickness,
-                    inner_start_y + wall_thickness, cell_size - wall_thickness,
-                    cell_size - wall_thickness};
+                    inner_start_y + wall_thickness, cell_size, cell_size};
   SDL_SetRenderDrawColor(r, fill_col.r, fill_col.g, fill_col.b, fill_col.a);
   SDL_RenderFillRect(r, &rect);
 }
@@ -240,6 +239,9 @@ static void Render_Cell_Interior(CellPos cell_pos, Vector2 top_left, Maze *maze,
     if (state & STATE_BACKTRACKED) {
       draw_cell_fill_full(top_left, COL_STATE_BACKTRACKED, maze_render);
 
+    } else if (state & STATE_LEAD_HEAD) {
+      draw_cell_fill_full(top_left, COL_STATE_LEAD_HEAD, maze_render);
+
     } else if (state & STATE_GEN_VISITED) {
       draw_cell_fill_full(top_left, COL_STATE_GEN_VISITED, maze_render);
 
@@ -262,7 +264,6 @@ static void Render_Cell_Interior(CellPos cell_pos, Vector2 top_left, Maze *maze,
     }
 
     if (state & STATE_LEAD_HEAD) {
-      printf("STate lead head triggered\n");
       draw_cell_connect(cell_pos, STATE_LEAD_HEAD, top_left,
                         COL_STATE_LEAD_HEAD, maze_render, maze);
     }
@@ -299,20 +300,21 @@ void Maze_Render(MazeRender *maze_render, Maze *maze) {
     curr_y += cell_size;
   }
 
-  // Displaying the start and end_cells with specific color
+  //---------Displaying the start and end_cells with specific color----------
   Vector2 start = {(maze->start_cell.col * cell_size) + start_x,
                    (maze->start_cell.row * cell_size) + start_y};
   Vector2 end = {(maze->end_cell.col * cell_size) + start_x,
                  (maze->end_cell.row * cell_size) + start_y};
-  float wall_thick = maze_render->wall_thickness;
 
-  SDL_FRect start_rect = {start.x + wall_thick, start.y + wall_thick,
-                          cell_size - wall_thick, cell_size - wall_thick};
-  SDL_FRect end_rect = {end.x + wall_thick, end.y + wall_thick,
-                        cell_size - wall_thick, cell_size - wall_thick};
-
+  // Filling Start and end Cell with color
   draw_cell_fill_full(start, COL_START_CELL, maze_render);
   draw_cell_fill_full(end, COL_END_CELL, maze_render);
+
+  // Rendering the start and end cell walls
+  Render_Cell_Wall(maze->start_cell, start, maze, maze_render);
+  Render_Cell_Wall(maze->end_cell, end, maze, maze_render);
+
+  //-------------------------------------------------------------------------
 }
 
 void Maze_Render_Destroy(MazeRender *maze_render) { free(maze_render); }

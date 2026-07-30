@@ -60,8 +60,6 @@ MazeEvents *DFSGen_Generate_MazeEvents(Maze *maze) {
   while (top >= 0) {
     CellPos neighbour;
     CellPos curr_cell = current_path[top];
-    // setting current cell to lead head
-    // MazeEvents_Add_StateChange(events, curr_cell, STATE_LEAD_HEAD);
 
     if (Get_ValidNeighbour(curr_cell, &neighbour, visited_cells, maze)) {
       // This logic is for advancing
@@ -87,7 +85,8 @@ MazeEvents *DFSGen_Generate_MazeEvents(Maze *maze) {
         printf("Somehow MazeEvents full. Wtf\n");
       }
 
-      // 5. Adding BREAK_WALL Cell Action event to MazeEvents
+      // 5. Adding BREAK_WALL Cell Action event to MazeEvents.
+      // 	This will break the wall between cell 1 and cell 2.
       if (!MazeEvents_Add_CellAction(events, cell1, cell2, cell_action)) {
         printf("Somehow MazeEvents full. Wtf\n");
       }
@@ -108,6 +107,8 @@ MazeEvents *DFSGen_Generate_MazeEvents(Maze *maze) {
       // 3. Adding to MazeEvents
       MazeEvents_Add_StateChange(events, cell1, cell_state);
     }
+
+    // Unsetting previous cell from lead head
   }
 
   Maze_SetAll_CellState(maze, STATE_GENERATED);
