@@ -50,6 +50,8 @@ MazeEvents *DFSGen_Generate_MazeEvents(Maze *maze) {
   MazeEvents *events = MazeEvents_Create(total_events);
 
   CellPos start_pos = maze->start_cell;
+  CellPos previous_cell = {0, 0};
+  MazeEvents_Add_StateChange(events, previous_cell, STATE_LEAD_HEAD);
 
   CellPos *current_path = calloc(maze->total_cells, sizeof(CellPos));
   int top = 0;
@@ -72,24 +74,14 @@ MazeEvents *DFSGen_Generate_MazeEvents(Maze *maze) {
       int index = Maze_Get_CellIndex(neighbour, maze);
       visited_cells[index] = true;
 
-      // 3. Changing state of cell
-      CellState cell_state = STATE_GEN_VISITED;
-
-      // 4. Breaking wall between current cell and neighbour cell
-      CellPos cell1 = curr_cell;
-      CellPos cell2 = neighbour;
-      CellAction cell_action = BREAK_WALL;
-
-      // 6. Adding State Generation Visited event to MazeEvents
-      if (!MazeEvents_Add_StateChange(events, cell1, cell_state)) {
+      if (!MazeEvents_Add_StateChange(events, curr_cell, STATE_GEN_VISITED)) {
         printf("Somehow MazeEvents full. Wtf\n");
       }
 
-      // 5. Adding BREAK_WALL Cell Action event to MazeEvents.
-      // 	This will break the wall between cell 1 and cell 2.
-      if (!MazeEvents_Add_CellAction(events, cell1, cell2, cell_action)) {
-        printf("Somehow MazeEvents full. Wtf\n");
-      }
+      MazeEvents_Add_CellAction(events, curr_cell, neighbour,
+                                BREAK_WALL_AND_MOVE_HEAD);
+
+      previous_cell = curr_cell;
 
     }
 
@@ -97,15 +89,13 @@ MazeEvents *DFSGen_Generate_MazeEvents(Maze *maze) {
       // This logic is for backtracking
 
       // 1. Popping the element from the stack
-
-      CellPos cell1 = current_path[top];
       top -= 1;
 
-      // 2. Changing Cell state
-      CellState cell_state = STATE_BACKTRACKED;
+      MazeEvents_Add_StateChange(events, curr_cell, STATE_BACKTRACKED);
 
-      // 3. Adding to MazeEvents
-      MazeEvents_Add_StateChange(events, cell1, cell_state);
+      MazeEvents_Add_CellAction(events, previous_cell, curr_cell, MOVE_HEAD);
+
+      previous_cell = curr_cell;
     }
 
     // Unsetting previous cell from lead head

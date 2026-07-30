@@ -8,6 +8,8 @@ typedef struct MazeEvents MazeEvents;
 
 typedef enum {
   BREAK_WALL,
+  MOVE_HEAD, // Change lead head from cell 1 to cell 2
+  BREAK_WALL_AND_MOVE_HEAD
 } CellAction;
 
 typedef enum {

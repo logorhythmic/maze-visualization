@@ -112,8 +112,17 @@ bool MazeEvents_Step(MazeEvents *maze_events, Maze *maze) {
     case BREAK_WALL:
       Maze_Break_Wall(maze, cell1, cell2);
       break;
+
+    case MOVE_HEAD:
+      Maze_Set_CellState(maze, cell1, UNSET_STATE(STATE_LEAD_HEAD));
+      Maze_Set_CellState(maze, cell2, STATE_LEAD_HEAD);
+      break;
+
+    case BREAK_WALL_AND_MOVE_HEAD:
+      Maze_Break_Wall(maze, cell1, cell2);
+      Maze_Set_CellState(maze, cell1, UNSET_STATE(STATE_LEAD_HEAD));
+      Maze_Set_CellState(maze, cell2, STATE_LEAD_HEAD);
     }
-    break;
   }
   }
 

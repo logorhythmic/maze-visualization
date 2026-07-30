@@ -163,12 +163,10 @@ static void draw_cell_fill_full(Vector2 top_left, SDL_Color fill_col,
   float cell_size = maze_render->cell_size;
   float wall_thickness = maze_render->wall_thickness;
   SDL_Renderer *r = maze_render->renderer;
-  float offset = 0.0f;
-  float inner_start_x = (float)top_left.x + offset;
-  float inner_start_y = (float)top_left.y + offset;
+  float inner_start_x = (float)top_left.x + wall_thickness;
+  float inner_start_y = (float)top_left.y + wall_thickness;
 
-  SDL_FRect rect = {inner_start_x + wall_thickness,
-                    inner_start_y + wall_thickness, cell_size, cell_size};
+  SDL_FRect rect = {inner_start_x, inner_start_y, cell_size, cell_size};
   SDL_SetRenderDrawColor(r, fill_col.r, fill_col.g, fill_col.b, fill_col.a);
   SDL_RenderFillRect(r, &rect);
 }

@@ -41,12 +41,19 @@ void Maze_Reset(Maze *maze) {
 }
 
 void Maze_SetAll_CellState(Maze *maze, CellState cell_state) {
-  for (int i = 0; i < maze->total_cells; i++) {
-    Cell *curr_cell = &maze->grid[i];
 
+  for (int i = 0; i < maze->total_cells; i++) {
+
+    Cell *curr_cell = &maze->grid[i];
     if (cell_state == STATE_GENERATED || cell_state == STATE_BLANK) {
       curr_cell->cell_state = cell_state;
+      continue;
+    }
 
+    // Check if inversion needs to occur
+    if (cell_state & STATE_CLEAR_MASK) {
+      CellState state_to_remove = cell_state & ~STATE_CLEAR_MASK;
+      curr_cell->cell_state &= ~state_to_remove;
     } else {
       curr_cell->cell_state |= cell_state;
     }
