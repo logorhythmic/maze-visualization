@@ -77,8 +77,6 @@ static void draw_cell_connect(CellPos curr_pos, CellState connect_state,
   float wall_thickness = maze_render->wall_thickness;
   SDL_Renderer *r = maze_render->renderer;
 
-  float actual_size = cell_size;
-
   float mid_rect_area = maze_render->soln_line_area;
 
   float inner_start_x = (float)top_left.x + wall_thickness;
@@ -171,6 +169,21 @@ static void draw_cell_fill_full(Vector2 top_left, SDL_Color fill_col,
   SDL_RenderFillRect(r, &rect);
 }
 
+static void draw_cell_fill_offset(Vector2 top_left, SDL_Color fill_col,
+                                  MazeRender *maze_render, float offset) {
+
+  float cell_size = maze_render->cell_size;
+  float wall_thickness = maze_render->wall_thickness;
+  SDL_Renderer *r = maze_render->renderer;
+  float inner_start_x = (float)top_left.x + wall_thickness;
+  float inner_start_y = (float)top_left.y + wall_thickness;
+
+  SDL_FRect rect = {inner_start_x, inner_start_y, cell_size + offset,
+                    cell_size + offset};
+  SDL_SetRenderDrawColor(r, fill_col.r, fill_col.g, fill_col.b, fill_col.a);
+  SDL_RenderFillRect(r, &rect);
+}
+
 static void Render_Cell_Wall(CellPos cell_pos, Vector2 current_pos, Maze *maze,
                              MazeRender *maze_render) {
 
@@ -216,17 +229,12 @@ static void Render_Cell_Wall(CellPos cell_pos, Vector2 current_pos, Maze *maze,
     DrawLineThick(r, line, maze_render->wall_color, wall_thick);
   }
 }
+//
 
 static void Render_Cell_Interior(CellPos cell_pos, Vector2 top_left, Maze *maze,
                                  MazeRender *maze_render) {
 
   Cell curr_cell = maze->grid[Maze_Get_CellIndex(cell_pos, maze)];
-  SDL_Renderer *r = maze_render->renderer;
-  int cell_size = maze_render->cell_size;
-  int wall_thick = maze_render->wall_thickness;
-
-  // Below, the code draws the wall, if the wall does not exist, the cell rect
-  // is modified.
 
   uint8_t state = curr_cell.cell_state;
 
@@ -234,8 +242,8 @@ static void Render_Cell_Interior(CellPos cell_pos, Vector2 top_left, Maze *maze,
 
   case STATE_BLANK:
 
-    if (state & STATE_LEAD_HEAD) {
-      draw_cell_fill_full(top_left, COL_STATE_LEAD_HEAD, maze_render);
+    if (state & STATE_FRONTIER) {
+      draw_cell_fill_full(top_left, COL_STATE_FRONTIER, maze_render);
 
     } else if (state & STATE_BACKTRACKED) {
       draw_cell_fill_full(top_left, COL_STATE_BACKTRACKED, maze_render);
@@ -252,8 +260,8 @@ static void Render_Cell_Interior(CellPos cell_pos, Vector2 top_left, Maze *maze,
     draw_cell_fill_full(top_left, COL_STATE_GENERATED, maze_render);
 
     if (state & STATE_SOLVE_VISITED) {
-      draw_cell_connect(cell_pos, STATE_SOLVE_VISITED, top_left,
-                        COL_STATE_SOLVE_VISITED, maze_render, maze);
+      draw_cell_connect(cell_pos, (STATE_SOLVE_VISITED | STATE_FRONTIER),
+                        top_left, COL_STATE_SOLVE_VISITED, maze_render, maze);
     }
 
     if (state & STATE_SOLUTION) {
@@ -261,9 +269,13 @@ static void Render_Cell_Interior(CellPos cell_pos, Vector2 top_left, Maze *maze,
                         maze_render, maze);
     }
 
-    if (state & STATE_LEAD_HEAD) {
-      draw_cell_connect(cell_pos, STATE_LEAD_HEAD, top_left,
-                        COL_STATE_LEAD_HEAD, maze_render, maze);
+    if (state & STATE_FRONTIER) {
+      // float offset = 2 * maze_render->wall_thickness;
+      // Vector2 custom = {top_left.x + offset, top_left.y + offset};
+      // draw_cell_fill_offset(custom, COL_STATE_FRONTIER, maze_render,
+      // -offset);
+      draw_cell_connect(cell_pos, STATE_SOLVE_VISITED, top_left,
+                        COL_STATE_FRONTIER, maze_render, maze);
     }
   }
 }

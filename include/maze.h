@@ -19,7 +19,7 @@ typedef enum {
   // Specific flags
   STATE_GEN_VISITED = 1 << 1,   // When Cell has been visited by gen algo
   STATE_SOLVE_VISITED = 1 << 2, // When Cell has been visited by solving algo
-  STATE_LEAD_HEAD = 1 << 3,
+  STATE_FRONTIER = 1 << 3,
   STATE_BACKTRACKED = 1 << 4,
   STATE_SOLUTION = 1 << 5,
 } CellState;

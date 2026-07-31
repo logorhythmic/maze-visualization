@@ -5,7 +5,7 @@
 
 typedef struct State State;
 
-State *State_Create(SDL_Renderer *renderer, double time_delay_ms);
+State *State_Create(SDL_Renderer *renderer);
 
 void State_Process_Event(State *state, const SDL_Event *event);
 

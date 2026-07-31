@@ -19,6 +19,7 @@ typedef enum {
 
 typedef enum {
   EVENT_STATE_CHANGE,
+  EVENT_STATE_CHANGE_ALL,
   EVENT_CELL_ACTION,
 } EventType;
 
@@ -29,6 +30,9 @@ bool MazeEvents_Expand(MazeEvents *old_events, int final_capacity);
 
 bool MazeEvents_Add_StateChange(MazeEvents *maze_events, CellPos cell1,
                                 CellState cell_state);
+
+bool MazeEvents_Add_StateChangeAll(MazeEvents *maze_events,
+                                   CellState cell_state);
 
 bool MazeEvents_Add_CellAction(MazeEvents *maze_events, CellPos cell1,
                                CellPos cell2, CellAction cell_action);

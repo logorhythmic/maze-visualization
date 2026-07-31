@@ -12,8 +12,6 @@
 #define SCR_WIDTH 900
 #define SCR_HEIGHT 900
 
-#define TIME_DELAY_MS 150
-
 int main() {
 
   SDL_SetHint(SDL_HINT_VIDEO_WAYLAND_SCALE_TO_DISPLAY, "1");
@@ -37,7 +35,7 @@ int main() {
   //
 
   // Setting up state
-  State *state = State_Create(renderer, TIME_DELAY_MS);
+  State *state = State_Create(renderer);
 
   bool done = false;
   while (!done) {

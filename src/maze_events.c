@@ -13,6 +13,10 @@ struct Event {
       CellState cell_state;
     } state_change;
 
+    struct {
+      CellState cell_state;
+    } state_change_all;
+
     // This struct is accessed when EVENT_CELL_ACTION
     struct {
       CellPos cell1;
@@ -67,6 +71,21 @@ bool MazeEvents_Add_StateChange(MazeEvents *maze_events, CellPos cell,
   return true;
 }
 
+bool MazeEvents_Add_StateChangeAll(MazeEvents *maze_events,
+                                   CellState cell_state) {
+  if (maze_events->total_events >= maze_events->capacity) {
+    return false;
+  }
+
+  Event new_event;
+  new_event.event_type = EVENT_STATE_CHANGE_ALL;
+  new_event.data.state_change_all.cell_state = cell_state;
+  maze_events->events[maze_events->total_events] = new_event;
+  maze_events->total_events += 1;
+
+  return true;
+}
+
 bool MazeEvents_Add_CellAction(MazeEvents *maze_events, CellPos cell1,
                                CellPos cell2, CellAction cell_action) {
 
@@ -115,18 +134,24 @@ bool MazeEvents_Step(MazeEvents *maze_events, Maze *maze) {
       break;
 
     case MOVE_HEAD:
-      Maze_Set_CellState(maze, cell2, STATE_LEAD_HEAD);
-      Maze_Set_CellState(maze, cell1, UNSET_STATE(STATE_LEAD_HEAD));
+      Maze_Set_CellState(maze, cell2, STATE_FRONTIER);
+      Maze_Set_CellState(maze, cell1, UNSET_STATE(STATE_FRONTIER));
       break;
 
     case BREAK_WALL_AND_MOVE_HEAD:
       Maze_Break_Wall(maze, cell1, cell2);
-      Maze_Set_CellState(maze, cell1, UNSET_STATE(STATE_LEAD_HEAD));
-      Maze_Set_CellState(maze, cell2, STATE_LEAD_HEAD);
+      Maze_Set_CellState(maze, cell1, UNSET_STATE(STATE_FRONTIER));
+      Maze_Set_CellState(maze, cell2, STATE_FRONTIER);
+      break;
     }
-  }
+    break;
   }
 
+  case EVENT_STATE_CHANGE_ALL: {
+    CellState state = curr_event.data.state_change_all.cell_state;
+    Maze_SetAll_CellState(maze, state);
+  }
+  }
   return true;
 }
 

@@ -10,12 +10,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define CELL_SIZE 80
+#define CELL_SIZE 25
 #define MAZE_START_POS ((Vector2){45, 45})
-#define COLUMNS 10
-#define ROWS 10
+#define COLUMNS 32
+#define ROWS 32
 #define WALL_THICKNESS 4
-#define SOLN_LINE_THICK 0.75f
+#define SOLN_LINE_THICK 0.90f
+#define TIME_DELAY_MS 30
 
 typedef enum { MODE_NONE, MODE_GENERATING, MAZE_READY, MODE_SOLVING } MazeMode;
 
@@ -41,7 +42,7 @@ void Set_Maze_Ends(Maze *maze) {
 
 };
 
-State *State_Create(SDL_Renderer *renderer, double time_delay_ms) {
+State *State_Create(SDL_Renderer *renderer) {
   State *state = calloc(1, sizeof(State));
   // CellPos start_cell = {SDL_rand(ROWS), SDL_rand(COLUMNS)};
   // CellPos end_cell = {SDL_rand(ROWS), SDL_rand(COLUMNS)};
@@ -54,7 +55,7 @@ State *State_Create(SDL_Renderer *renderer, double time_delay_ms) {
       Maze_Render_Create(renderer, CELL_SIZE, MAZE_START_POS, WALL_THICKNESS,
                          COL_WALL, SOLN_LINE_THICK, COL_STATE_GENERATED);
   state->maze_mode = MODE_NONE;
-  state->time_delay = time_delay_ms;
+  state->time_delay = TIME_DELAY_MS;
   state->current_events = NULL;
   return state;
 }

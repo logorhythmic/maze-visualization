@@ -46,15 +46,13 @@ bool Get_ValidNeighbour(CellPos curr_pos, CellPos *neighbour_pos,
 
 MazeEvents *DFSGen_Generate_MazeEvents(Maze *maze) {
   int total_events = maze->total_cells * 10;
-  int rows = maze->rows;
-  int columns = maze->columns;
   MazeEvents *events = MazeEvents_Create(total_events);
 
   CellPos start_pos = maze->start_cell;
   CellPos curr_head = start_pos;
-  MazeEvents_Add_StateChange(events, curr_head, STATE_LEAD_HEAD);
+  MazeEvents_Add_StateChange(events, curr_head, STATE_FRONTIER);
 
-  // MazeEvents_Add_StateChange(events, previous_cell, STATE_LEAD_HEAD);
+  // MazeEvents_Add_StateChange(events, previous_cell, STATE_FRONTIER);
 
   CellPos *current_path = calloc(maze->total_cells, sizeof(CellPos));
   int top = -1;

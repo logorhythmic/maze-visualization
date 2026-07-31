@@ -5,10 +5,6 @@
 bool Get_Unvisited_Neighbour(CellPos curr_pos, CellPos *neighbour_pos,
                              Maze *maze, const bool *visited) {
   Cell *cell = &maze->grid[Maze_Get_CellIndex(curr_pos, maze)];
-  CellPos north = {curr_pos.row - 1, curr_pos.col};
-  CellPos south = {curr_pos.row + 1, curr_pos.col};
-  CellPos east = {curr_pos.row, curr_pos.col + 1};
-  CellPos west = {curr_pos.row, curr_pos.col - 1};
 
   if (cell->path_north) {
     CellPos north = {curr_pos.row - 1, curr_pos.col};
@@ -152,6 +148,7 @@ CellPos *obtain_final_path(CellPos *came_from, int *final_length, Maze *maze) {
   CellPos *final_path_rev = calloc(path_length, sizeof(CellPos));
   int c = 0;
 
+  // Reversing the final path
   for (int i = count; i >= 0; i--) {
     final_path_rev[c] = final_path[i];
     c++;
@@ -166,8 +163,8 @@ MazeEvents *BFSSolve_Generate_MazeEvents(Maze *maze) {
 
   // Allocating the frontier array
   CellPos *frontier = calloc(maze->total_cells, sizeof(CellPos));
-  int front = 0;
-  int rear = 0; // Position to enqueue an element
+  int front = -1;
+  int rear = -1; // Position to enqueue an element
 
   // To keep track of visited cells
   bool *visited = calloc(maze->total_cells, sizeof(bool));
@@ -175,19 +172,25 @@ MazeEvents *BFSSolve_Generate_MazeEvents(Maze *maze) {
   // To store the path history
   CellPos *came_from = calloc(maze->total_cells, sizeof(CellPos));
 
-  MazeEvents *events = MazeEvents_Create(maze->total_cells * 2);
+  MazeEvents *events = MazeEvents_Create(maze->total_cells * 3);
 
-  frontier[rear++] = maze->start_cell;
+  frontier[++rear] = maze->start_cell;
 
   // Storing graph depth
   int depth = 0;
 
   while (front < rear) {
-    CellPos current_pos = frontier[front++];
+    CellPos current_pos = frontier[++front];
     CellPos neighbour_pos = {-1, -1};
 
+    // If we find the target cell (end cell). We generate the final path and
+    // then exit the loop
     if (Maze_Is_SameCell(current_pos, maze->end_cell)) {
+
       MazeEvents_Add_StateChange(events, current_pos, STATE_SOLVE_VISITED);
+
+      // Unset all lead heads
+      MazeEvents_Add_StateChangeAll(events, UNSET_STATE(STATE_FRONTIER));
 
       int path_length;
       CellPos *final_path = obtain_final_path(came_from, &path_length, maze);
@@ -209,6 +212,7 @@ MazeEvents *BFSSolve_Generate_MazeEvents(Maze *maze) {
       break;
     }
 
+    int num_of_neighbours = 0;
     while (
         Get_Unvisited_Neighbour(current_pos, &neighbour_pos, maze, visited)) {
 
@@ -216,12 +220,24 @@ MazeEvents *BFSSolve_Generate_MazeEvents(Maze *maze) {
       visited[Maze_Get_CellIndex(neighbour_pos, maze)] = true;
 
       // Enqueing the neighbour_pos
-      frontier[rear++] = neighbour_pos;
+      frontier[++rear] = neighbour_pos;
+      // MazeEvents_Add_StateChange(events, neighbour_pos, STATE_SOLVE_VISITED);
 
       // Adding cell to path history
+      // Q: "Where did neighbour_cell come from?"->
+      // A: "It came from current_cell"
       came_from[Maze_Get_CellIndex(neighbour_pos, maze)] = current_pos;
+      num_of_neighbours++;
     }
-    // Adding Maze Event
+
+    MazeEvents_Add_CellAction(events,
+                              came_from[Maze_Get_CellIndex(current_pos, maze)],
+                              current_pos, MOVE_HEAD);
+    if (num_of_neighbours == 0) {
+      MazeEvents_Add_StateChange(events, current_pos,
+                                 UNSET_STATE(STATE_FRONTIER));
+    }
+    // Setting current_pos to STATE_SOLVE_VISITED
     MazeEvents_Add_StateChange(events, current_pos, STATE_SOLVE_VISITED);
 
     // Incrementing depth
