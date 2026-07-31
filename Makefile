@@ -9,7 +9,7 @@ SRCS = \
 SRC_FILES = main.c $(addprefix src/, $(SRCS))
 
 run: 
-	gcc $(SRC_FILES) -Iinclude -o output.bin -g -Og -lSDL3 && ./output.bin
+	gcc $(SRC_FILES) -Iinclude -o output.bin -g -Og -lSDL3 -Wall && ./output.bin
 
 san:
-	gcc $(SRC_FILES) -fsanitize=address -Iinclude -g -O0 -lSDL3 -o output.bin 
+	gcc $(SRC_FILES) -fsanitize=address -fno-omit-frame-pointer -Iinclude -g -O0 -lSDL3 -o output.bin 

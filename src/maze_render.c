@@ -234,11 +234,11 @@ static void Render_Cell_Interior(CellPos cell_pos, Vector2 top_left, Maze *maze,
 
   case STATE_BLANK:
 
-    if (state & STATE_BACKTRACKED) {
-      draw_cell_fill_full(top_left, COL_STATE_BACKTRACKED, maze_render);
-
-    } else if (state & STATE_LEAD_HEAD) {
+    if (state & STATE_LEAD_HEAD) {
       draw_cell_fill_full(top_left, COL_STATE_LEAD_HEAD, maze_render);
+
+    } else if (state & STATE_BACKTRACKED) {
+      draw_cell_fill_full(top_left, COL_STATE_BACKTRACKED, maze_render);
 
     } else if (state & STATE_GEN_VISITED) {
       draw_cell_fill_full(top_left, COL_STATE_GEN_VISITED, maze_render);

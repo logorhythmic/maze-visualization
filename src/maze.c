@@ -79,8 +79,15 @@ void Maze_Set_CellState(Maze *maze, CellPos cell_pos, CellState cell_state) {
 
 void Maze_Break_Wall(Maze *maze, CellPos cell1, CellPos cell2) {
   if (!Maze_Is_CellValid(cell1, maze) || !(Maze_Is_CellValid(cell2, maze))) {
+    printf("Invalid CellPos to break walls\n");
     return;
   }
+
+  if (Maze_Is_SameCell(cell1, cell2)) {
+    printf("Cannot break walls between the same cell\n");
+    return;
+  }
+
   Cell *curr_cell = &maze->grid[get_cell_index(cell1, maze)];
   Cell *neighbour_cell = &maze->grid[get_cell_index(cell2, maze)];
 

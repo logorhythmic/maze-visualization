@@ -1,5 +1,6 @@
 #include "../include/generation.h"
 #include <SDL3/SDL_stdinc.h>
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -50,15 +51,18 @@ MazeEvents *DFSGen_Generate_MazeEvents(Maze *maze) {
   MazeEvents *events = MazeEvents_Create(total_events);
 
   CellPos start_pos = maze->start_cell;
-  CellPos previous_cell = {0, 0};
-  MazeEvents_Add_StateChange(events, previous_cell, STATE_LEAD_HEAD);
+  CellPos curr_head = start_pos;
+  MazeEvents_Add_StateChange(events, curr_head, STATE_LEAD_HEAD);
+
+  // MazeEvents_Add_StateChange(events, previous_cell, STATE_LEAD_HEAD);
 
   CellPos *current_path = calloc(maze->total_cells, sizeof(CellPos));
-  int top = 0;
+  int top = -1;
   bool *visited_cells = calloc(maze->total_cells, sizeof(bool));
-  current_path[top] = start_pos;
+  current_path[++top] = start_pos;
   visited_cells[Maze_Get_CellIndex(start_pos, maze)] = true;
 
+  CellPos backtracked_cell;
   while (top >= 0) {
     CellPos neighbour;
     CellPos curr_cell = current_path[top];
@@ -67,38 +71,32 @@ MazeEvents *DFSGen_Generate_MazeEvents(Maze *maze) {
       // This logic is for advancing
 
       // 1. Adding neighbour to current_path
-      top += 1;
-      current_path[top] = neighbour;
+      current_path[++top] = neighbour;
 
       // 2. Adding valid neighbour to visited_cells
       int index = Maze_Get_CellIndex(neighbour, maze);
       visited_cells[index] = true;
 
-      if (!MazeEvents_Add_StateChange(events, curr_cell, STATE_GEN_VISITED)) {
-        printf("Somehow MazeEvents full. Wtf\n");
-      }
+      MazeEvents_Add_StateChange(events, curr_cell, STATE_GEN_VISITED);
 
       MazeEvents_Add_CellAction(events, curr_cell, neighbour,
                                 BREAK_WALL_AND_MOVE_HEAD);
-
-      previous_cell = curr_cell;
 
     }
 
     else {
       // This logic is for backtracking
 
-      // 1. Popping the element from the stack
-      top -= 1;
-
+      --top;
       MazeEvents_Add_StateChange(events, curr_cell, STATE_BACKTRACKED);
+      if (top >= 0) {
 
-      MazeEvents_Add_CellAction(events, previous_cell, curr_cell, MOVE_HEAD);
+        backtracked_cell = current_path[top];
 
-      previous_cell = curr_cell;
+        MazeEvents_Add_CellAction(events, curr_cell, backtracked_cell,
+                                  MOVE_HEAD);
+      }
     }
-
-    // Unsetting previous cell from lead head
   }
 
   Maze_SetAll_CellState(maze, STATE_GENERATED);

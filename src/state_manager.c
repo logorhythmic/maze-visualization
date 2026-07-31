@@ -10,10 +10,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define CELL_SIZE 25
+#define CELL_SIZE 80
 #define MAZE_START_POS ((Vector2){45, 45})
-#define COLUMNS 32
-#define ROWS 32
+#define COLUMNS 10
+#define ROWS 10
 #define WALL_THICKNESS 4
 #define SOLN_LINE_THICK 0.75f
 

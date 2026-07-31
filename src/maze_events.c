@@ -1,4 +1,5 @@
 #include "../include/maze_events.h"
+#include <stdio.h>
 #include <stdlib.h>
 
 struct Event {
@@ -114,8 +115,8 @@ bool MazeEvents_Step(MazeEvents *maze_events, Maze *maze) {
       break;
 
     case MOVE_HEAD:
-      Maze_Set_CellState(maze, cell1, UNSET_STATE(STATE_LEAD_HEAD));
       Maze_Set_CellState(maze, cell2, STATE_LEAD_HEAD);
+      Maze_Set_CellState(maze, cell1, UNSET_STATE(STATE_LEAD_HEAD));
       break;
 
     case BREAK_WALL_AND_MOVE_HEAD:
