@@ -1,4 +1,5 @@
 #include "../include/maze_events.h"
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -45,8 +46,19 @@ MazeEvents *MazeEvents_Create(int capacity) {
 }
 
 bool MazeEvents_Expand(MazeEvents *old_events, int final_capacity) {
+
+  if (final_capacity <= old_events->capacity) {
+    printf("Final Smaller than initial when expanding maze_events\n");
+    return true;
+  }
+  // if (final_capacity < old_events->capacity) {
+  //   printf("Event capacity already greater than needed to be extended\n");
+  //   return true;
+  // }
+
   Event *final_events =
       realloc(old_events->events, final_capacity * sizeof(Event));
+  assert(final_events != NULL);
   if (final_events == NULL) {
     return false;
   }

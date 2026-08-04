@@ -85,6 +85,31 @@ void Event_DFSGen(State *state) {
   }
 }
 
+void Event_PrimsGen(State *state) {
+  MazeEvents *PrimsGen_events = PrimsGen_Generate_MazeEvents(state->maze);
+
+  // Destroy previous events if exist (To prevent memory leaks)
+  if (state->current_events != NULL) {
+    MazeEvents_Destroy(state->current_events);
+  }
+
+  // Current events are now populated with PrimsGen_Events
+  state->current_events = PrimsGen_events;
+
+  // Set MazeMode to generation
+  state->maze_mode = MODE_GENERATING;
+
+  // Need to always reset maze to clear previous generation or solving (if any)
+  Maze_Reset(state->maze);
+
+  // If not being animated, display final Maze
+  if (!state->animate) {
+    MazeEvents_StepAll(state->current_events, state->maze);
+    Maze_SetAll_CellState(state->maze, STATE_GENERATED);
+    state->maze_mode = MAZE_READY;
+  }
+}
+
 void Event_DFSSolve(State *state) {
   if (state->maze_mode != MAZE_READY) {
     printf("Maze has not been generated. Generate the maze first\n");
@@ -156,6 +181,10 @@ void State_Process_Event(State *state, const SDL_Event *event) {
 
   case SDLK_D: // Init DFS Generation
     Event_DFSGen(state);
+    break;
+
+  case SDLK_P:
+    Event_PrimsGen(state);
     break;
 
   case SDLK_1:

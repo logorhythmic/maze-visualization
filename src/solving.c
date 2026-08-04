@@ -162,7 +162,7 @@ CellPos *obtain_final_path(CellPos *came_from, int *final_length, Maze *maze) {
 MazeEvents *BFSSolve_Generate_MazeEvents(Maze *maze) {
 
   // Allocating the frontier array
-  CellPos *frontier = calloc(maze->total_cells, sizeof(CellPos));
+  CellPos *frontier = calloc(maze->total_cells + 1, sizeof(CellPos));
   int front = -1;
   int rear = -1; // Position to enqueue an element
 
@@ -198,7 +198,7 @@ MazeEvents *BFSSolve_Generate_MazeEvents(Maze *maze) {
       // Need to increase size of event array to add in the final path
       // visualization
 
-      if (!MazeEvents_Expand(events, (maze->total_cells * 2) + path_length)) {
+      if (!MazeEvents_Expand(events, (maze->total_cells * 3) + path_length)) {
         printf(
             "Maze failed to expand events. Can not visualize the final path\n");
         return NULL;
