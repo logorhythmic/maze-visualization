@@ -16,13 +16,13 @@
 #define CELL_SIZE 100
 #define COLUMNS 8
 #define ROWS 8
-#define TIME_DELAY_MS 450
+#define TIME_DELAY_MS 600
 
 #else
 #define CELL_SIZE 25
 #define COLUMNS 32
 #define ROWS 32
-#define TIME_DELAY_MS 80
+#define TIME_DELAY_MS 90
 #endif
 
 #define MAZE_START_POS ((Vector2){45, 45})

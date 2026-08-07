@@ -179,7 +179,7 @@ MazeEvents *BFSSolve_Generate_MazeEvents(Maze *maze) {
 
   frontier[++rear] = maze->start_cell;
   // Cell is now in the frontier, hence it is marked as frontier
-  MazeEvents_Begin_Batch(events);
+  // MazeEvents_Begin_Batch(events);
   MazeEvents_Add_StateChange(events, maze->start_cell, STATE_FRONTIER);
 
   // Storing graph depth
@@ -193,7 +193,7 @@ MazeEvents *BFSSolve_Generate_MazeEvents(Maze *maze) {
     // Logic for if the target cell is found (end is found)
     if (Maze_Is_SameCell(current_pos, maze->end_cell)) {
 
-      MazeEvents_End_Batch(events);
+      // MazeEvents_End_Batch(events);
       MazeEvents_Add_StateChange(events, current_pos, STATE_SOLVE_EXPLORED);
 
       // Unset all lead heads
@@ -219,6 +219,7 @@ MazeEvents *BFSSolve_Generate_MazeEvents(Maze *maze) {
     }
 
     // Once cell is dequeued, its state is STATE_SOLVE_EXPLORED
+    MazeEvents_Begin_Batch(events);
     MazeEvents_Add_StateChange(events, current_pos, STATE_SOLVE_EXPLORED);
     // Once Cell is dequeued. It is no more in the frontier
     MazeEvents_Add_StateChange(events, current_pos,
@@ -241,13 +242,14 @@ MazeEvents *BFSSolve_Generate_MazeEvents(Maze *maze) {
       // Enqueued cell is now in frontier
       MazeEvents_Add_StateChange(events, neighbour_pos, STATE_FRONTIER);
     }
+    MazeEvents_End_Batch(events);
 
     // Logic to check depth
     if (--pending_depth_inc == 0) {
-      MazeEvents_End_Batch(events);
+      // MazeEvents_End_Batch(events);
       pending_depth_inc = rear - front; // Gives us current queue size
       depth += 1;
-      MazeEvents_Begin_Batch(events);
+      // MazeEvents_Begin_Batch(events);
     }
   }
 

@@ -148,13 +148,13 @@ MazeEvents *PrimsGen_Generate_MazeEvents(Maze *maze) {
       MazeEvents_Add_CellAction(events, curr_node.current, curr_node.parent,
                                 BREAK_WALL);
       MazeEvents_Add_StateChange(events, curr_node.current, STATE_GENERATED);
-      MazeEvents_End_Batch(events);
 
       // Iterating through the neighbours and adding them to the queue
       for (int i = 0; i < total_valid_neighbours; i++) {
         random_queue[rear++] = (Node){neighbours[i], curr_node.current};
         MazeEvents_Add_StateChange(events, neighbours[i], STATE_FRONTIER);
       }
+      MazeEvents_End_Batch(events);
 
       visited_cells[Maze_Get_CellIndex(curr_node.current, maze)] = true;
       total_edges += 1;
