@@ -55,6 +55,7 @@ MazeEvents *DFSSolve_Generate_MazeEvents(Maze *maze) {
   CellPos target = maze->end_cell;
 
   current_path[top] = start;
+  MazeEvents_Add_StateChange(events, start, STATE_SOLUTION);
   visited[Maze_Get_CellIndex(start, maze)] = true;
 
   // Default value for invalid neighbour
@@ -81,16 +82,18 @@ MazeEvents *DFSSolve_Generate_MazeEvents(Maze *maze) {
       // Adding neighbour to visited
       visited[Maze_Get_CellIndex(neighbour, maze)] = true;
 
-      // Adding MazeEvent
-      MazeEvents_Add_StateChange(events, current, STATE_SOLUTION);
+      // Setting neighbour cellstate to solution
+      MazeEvents_Add_StateChange(events, neighbour, STATE_SOLUTION);
+
     }
 
     // Backtracking
     else {
       // Popping Element from the stack
       top -= 1;
-      MazeEvents_Add_StateChange(events, current, STATE_SOLUTION);
-      MazeEvents_Add_StateChange(events, current, STATE_GENERATED);
+
+      // Removing current cell state from solution because it backtracked.
+      MazeEvents_Add_StateChange(events, current, UNSET_STATE(STATE_SOLUTION));
     }
   }
   printf("Ending the while loop\n");
@@ -99,10 +102,10 @@ MazeEvents *DFSSolve_Generate_MazeEvents(Maze *maze) {
   return events;
 }
 
-// Returns pointer to CellPos array of the final path.
-// Size of array is equal to its depth.
-// Populates final_length with final path lenght
-
+/* Returns pointer to CellPos array of the final path.
+ * Size of array is equal to its depth.
+ * Populates final_length with final path lenght
+ */
 CellPos *obtain_final_path(CellPos *came_from, int *final_length, Maze *maze) {
   // Obtaining the proper path and storing in the path array
   // Path length will be equal to the length
@@ -175,19 +178,23 @@ MazeEvents *BFSSolve_Generate_MazeEvents(Maze *maze) {
   MazeEvents *events = MazeEvents_Create(maze->total_cells * 3);
 
   frontier[++rear] = maze->start_cell;
+  // Cell is now in the frontier, hence it is marked as frontier
+  MazeEvents_Begin_Batch(events);
+  MazeEvents_Add_StateChange(events, maze->start_cell, STATE_FRONTIER);
 
   // Storing graph depth
+  int pending_depth_inc = 1;
   int depth = 0;
 
   while (front < rear) {
     CellPos current_pos = frontier[++front];
     CellPos neighbour_pos = {-1, -1};
 
-    // If we find the target cell (end cell). We generate the final path and
-    // then exit the loop
+    // Logic for if the target cell is found (end is found)
     if (Maze_Is_SameCell(current_pos, maze->end_cell)) {
 
-      MazeEvents_Add_StateChange(events, current_pos, STATE_SOLVE_VISITED);
+      MazeEvents_End_Batch(events);
+      MazeEvents_Add_StateChange(events, current_pos, STATE_SOLVE_EXPLORED);
 
       // Unset all lead heads
       MazeEvents_Add_StateChangeAll(events, UNSET_STATE(STATE_FRONTIER));
@@ -197,7 +204,6 @@ MazeEvents *BFSSolve_Generate_MazeEvents(Maze *maze) {
 
       // Need to increase size of event array to add in the final path
       // visualization
-
       if (!MazeEvents_Expand(events, (maze->total_cells * 3) + path_length)) {
         printf(
             "Maze failed to expand events. Can not visualize the final path\n");
@@ -212,7 +218,12 @@ MazeEvents *BFSSolve_Generate_MazeEvents(Maze *maze) {
       break;
     }
 
-    int num_of_neighbours = 0;
+    // Once cell is dequeued, its state is STATE_SOLVE_EXPLORED
+    MazeEvents_Add_StateChange(events, current_pos, STATE_SOLVE_EXPLORED);
+    // Once Cell is dequeued. It is no more in the frontier
+    MazeEvents_Add_StateChange(events, current_pos,
+                               UNSET_STATE(STATE_FRONTIER));
+
     while (
         Get_Unvisited_Neighbour(current_pos, &neighbour_pos, maze, visited)) {
 
@@ -221,27 +232,23 @@ MazeEvents *BFSSolve_Generate_MazeEvents(Maze *maze) {
 
       // Enqueing the neighbour_pos
       frontier[++rear] = neighbour_pos;
-      // MazeEvents_Add_StateChange(events, neighbour_pos, STATE_SOLVE_VISITED);
 
       // Adding cell to path history
       // Q: "Where did neighbour_cell come from?"->
       // A: "It came from current_cell"
       came_from[Maze_Get_CellIndex(neighbour_pos, maze)] = current_pos;
-      num_of_neighbours++;
+
+      // Enqueued cell is now in frontier
+      MazeEvents_Add_StateChange(events, neighbour_pos, STATE_FRONTIER);
     }
 
-    MazeEvents_Add_CellAction(events,
-                              came_from[Maze_Get_CellIndex(current_pos, maze)],
-                              current_pos, MOVE_HEAD);
-    if (num_of_neighbours == 0) {
-      MazeEvents_Add_StateChange(events, current_pos,
-                                 UNSET_STATE(STATE_FRONTIER));
+    // Logic to check depth
+    if (--pending_depth_inc == 0) {
+      MazeEvents_End_Batch(events);
+      pending_depth_inc = rear - front; // Gives us current queue size
+      depth += 1;
+      MazeEvents_Begin_Batch(events);
     }
-    // Setting current_pos to STATE_SOLVE_VISITED
-    MazeEvents_Add_StateChange(events, current_pos, STATE_SOLVE_VISITED);
-
-    // Incrementing depth
-    depth += 1;
   }
 
   printf("Ending the BFS solve while loop\n");

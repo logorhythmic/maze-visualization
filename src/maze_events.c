@@ -1,10 +1,22 @@
 #include "../include/maze_events.h"
 #include <assert.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
+typedef enum {
+  EVENT_STATE_CHANGE,
+  EVENT_STATE_CHANGE_ALL,
+  EVENT_CELL_ACTION,
+} EventType;
+
+typedef enum {
+  CATEGORY_GENERATION,
+  CATEGORY_SOLVING,
+} EventCategory;
+
 struct Event {
-  EventType event_type;
+  uint8_t event_type;
 
   union {
 
@@ -30,6 +42,7 @@ struct Event {
 
 struct MazeEvents {
   Event *events;
+  bool batching;
   int current_event;
   int total_events;
   int capacity;
@@ -39,6 +52,7 @@ MazeEvents *MazeEvents_Create(int capacity) {
   MazeEvents *maze_events = calloc(1, sizeof(MazeEvents));
   Event *events = calloc(capacity, sizeof(Event));
   maze_events->events = events;
+  maze_events->batching = false;
   maze_events->current_event = 0;
   maze_events->total_events = 0;
   maze_events->capacity = capacity;
@@ -67,6 +81,17 @@ bool MazeEvents_Expand(MazeEvents *old_events, int final_capacity) {
   return true;
 }
 
+void MazeEvents_Begin_Batch(MazeEvents *maze_events) {
+  maze_events->batching = true;
+}
+
+void MazeEvents_End_Batch(MazeEvents *maze_events) {
+  // Turning off the previous event's advance flag
+  maze_events->events[maze_events->total_events - 1].event_type &=
+      ~EVENT_ADVANCE_FLAG;
+  maze_events->batching = false;
+}
+
 bool MazeEvents_Add_StateChange(MazeEvents *maze_events, CellPos cell,
                                 CellState cell_state) {
   if (maze_events->total_events >= maze_events->capacity) {
@@ -74,7 +99,14 @@ bool MazeEvents_Add_StateChange(MazeEvents *maze_events, CellPos cell,
   }
 
   Event new_event;
-  new_event.event_type = EVENT_STATE_CHANGE;
+
+  // Enable flag if batching is on
+  uint8_t flag = 0x00;
+  if (maze_events->batching) {
+    flag = EVENT_ADVANCE_FLAG;
+  }
+
+  new_event.event_type = EVENT_STATE_CHANGE | flag;
   new_event.data.state_change.cell = cell;
   new_event.data.state_change.cell_state = cell_state;
 
@@ -89,8 +121,14 @@ bool MazeEvents_Add_StateChangeAll(MazeEvents *maze_events,
     return false;
   }
 
+  // Enable flag if batching is on
+  uint8_t flag = 0x00;
+  if (maze_events->batching) {
+    flag = EVENT_ADVANCE_FLAG;
+  }
+
   Event new_event;
-  new_event.event_type = EVENT_STATE_CHANGE_ALL;
+  new_event.event_type = EVENT_STATE_CHANGE_ALL | flag;
   new_event.data.state_change_all.cell_state = cell_state;
   maze_events->events[maze_events->total_events] = new_event;
   maze_events->total_events += 1;
@@ -105,8 +143,14 @@ bool MazeEvents_Add_CellAction(MazeEvents *maze_events, CellPos cell1,
     return false;
   }
 
+  // Enable flag if batching is on
+  uint8_t flag = 0x00;
+  if (maze_events->batching) {
+    flag = EVENT_ADVANCE_FLAG;
+  }
+
   Event new_event;
-  new_event.event_type = EVENT_CELL_ACTION;
+  new_event.event_type = EVENT_CELL_ACTION | flag;
   new_event.data.cell_action.cell1 = cell1;
   new_event.data.cell_action.cell2 = cell2;
   new_event.data.cell_action.cell_action = cell_action;
@@ -117,53 +161,59 @@ bool MazeEvents_Add_CellAction(MazeEvents *maze_events, CellPos cell1,
 }
 
 bool MazeEvents_Step(MazeEvents *maze_events, Maze *maze) {
+  Event curr_event;
 
-  if (maze_events->current_event >= maze_events->total_events) {
-    maze_events->current_event = 0;
-    return false;
-  }
+  do {
+    if (maze_events->current_event >= maze_events->total_events) {
+      maze_events->current_event = 0;
+      return false;
+    }
 
-  Event curr_event = maze_events->events[maze_events->current_event++];
-  EventType event_type = curr_event.event_type;
+    curr_event = maze_events->events[maze_events->current_event++];
 
-  switch (event_type) {
+    EventType actual_event_type = curr_event.event_type & ~EVENT_ADVANCE_FLAG;
 
-  case EVENT_STATE_CHANGE: {
-    CellPos cell = curr_event.data.state_change.cell;
-    CellState state = curr_event.data.state_change.cell_state;
-    Maze_Set_CellState(maze, cell, state);
-    break;
-  }
+    switch (actual_event_type) {
 
-  case EVENT_CELL_ACTION: {
-    CellPos cell1 = curr_event.data.cell_action.cell1;
-    CellPos cell2 = curr_event.data.cell_action.cell2;
-    CellAction cell_action = curr_event.data.cell_action.cell_action;
-
-    switch (cell_action) {
-    case BREAK_WALL:
-      Maze_Break_Wall(maze, cell1, cell2);
-      break;
-
-    case MOVE_HEAD:
-      Maze_Set_CellState(maze, cell2, STATE_FRONTIER);
-      Maze_Set_CellState(maze, cell1, UNSET_STATE(STATE_FRONTIER));
-      break;
-
-    case BREAK_WALL_AND_MOVE_HEAD:
-      Maze_Break_Wall(maze, cell1, cell2);
-      Maze_Set_CellState(maze, cell1, UNSET_STATE(STATE_FRONTIER));
-      Maze_Set_CellState(maze, cell2, STATE_FRONTIER);
+    case EVENT_STATE_CHANGE: {
+      CellPos cell = curr_event.data.state_change.cell;
+      CellState state = curr_event.data.state_change.cell_state;
+      Maze_Set_CellState(maze, cell, state);
       break;
     }
-    break;
-  }
 
-  case EVENT_STATE_CHANGE_ALL: {
-    CellState state = curr_event.data.state_change_all.cell_state;
-    Maze_SetAll_CellState(maze, state);
-  }
-  }
+    case EVENT_CELL_ACTION: {
+      CellPos cell1 = curr_event.data.cell_action.cell1;
+      CellPos cell2 = curr_event.data.cell_action.cell2;
+      CellAction cell_action = curr_event.data.cell_action.cell_action;
+
+      switch (cell_action) {
+      case BREAK_WALL:
+        Maze_Break_Wall(maze, cell1, cell2);
+        break;
+
+      case MOVE_HEAD:
+        Maze_Set_CellState(maze, cell2, STATE_FRONTIER);
+        Maze_Set_CellState(maze, cell1, UNSET_STATE(STATE_FRONTIER));
+        break;
+
+      case BREAK_WALL_AND_MOVE_HEAD:
+        Maze_Break_Wall(maze, cell1, cell2);
+        Maze_Set_CellState(maze, cell1, UNSET_STATE(STATE_FRONTIER));
+        Maze_Set_CellState(maze, cell2, STATE_FRONTIER);
+        break;
+      }
+      break;
+    }
+
+    case EVENT_STATE_CHANGE_ALL: {
+      CellState state = curr_event.data.state_change_all.cell_state;
+      Maze_SetAll_CellState(maze, state);
+      break;
+    }
+    }
+  } while (curr_event.event_type & EVENT_ADVANCE_FLAG);
+
   return true;
 }
 

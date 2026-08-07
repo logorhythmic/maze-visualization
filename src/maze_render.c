@@ -259,8 +259,8 @@ static void Render_Cell_Interior(CellPos cell_pos, Vector2 top_left, Maze *maze,
   case STATE_GENERATED:
     draw_cell_fill_full(top_left, COL_STATE_GENERATED, maze_render);
 
-    if (state & STATE_SOLVE_VISITED) {
-      draw_cell_connect(cell_pos, (STATE_SOLVE_VISITED | STATE_FRONTIER),
+    if (state & STATE_SOLVE_EXPLORED) {
+      draw_cell_connect(cell_pos, (STATE_SOLVE_EXPLORED | STATE_FRONTIER),
                         top_left, COL_STATE_SOLVE_VISITED, maze_render, maze);
     }
 
@@ -274,7 +274,7 @@ static void Render_Cell_Interior(CellPos cell_pos, Vector2 top_left, Maze *maze,
       // Vector2 custom = {top_left.x + offset, top_left.y + offset};
       // draw_cell_fill_offset(custom, COL_STATE_FRONTIER, maze_render,
       // -offset);
-      draw_cell_connect(cell_pos, STATE_SOLVE_VISITED, top_left,
+      draw_cell_connect(cell_pos, STATE_SOLVE_EXPLORED, top_left,
                         COL_STATE_FRONTIER, maze_render, maze);
     }
   }

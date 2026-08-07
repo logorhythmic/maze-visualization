@@ -60,6 +60,10 @@ void Maze_SetAll_CellState(Maze *maze, CellState cell_state) {
   }
 }
 
+uint8_t Maze_Get_CellState(Maze *maze, CellPos cell_pos) {
+  return maze->grid[get_cell_index(cell_pos, maze)].cell_state;
+}
+
 void Maze_Set_CellState(Maze *maze, CellPos cell_pos, CellState cell_state) {
   Cell *curr_cell = &maze->grid[get_cell_index(cell_pos, maze)];
 

@@ -77,8 +77,14 @@ MazeEvents *DFSGen_Generate_MazeEvents(Maze *maze) {
 
       MazeEvents_Add_StateChange(events, curr_cell, STATE_GEN_VISITED);
 
+      MazeEvents_Begin_Batch(events);
       MazeEvents_Add_CellAction(events, curr_cell, random_neighbour,
-                                BREAK_WALL_AND_MOVE_HEAD);
+                                BREAK_WALL);
+      MazeEvents_Add_CellAction(events, curr_cell, random_neighbour, MOVE_HEAD);
+      MazeEvents_End_Batch(events);
+
+      // MazeEvents_Add_CellAction(events, curr_cell, random_neighbour,
+      //                           BREAK_WALL_AND_MOVE_HEAD);
 
     }
 
@@ -138,6 +144,12 @@ MazeEvents *PrimsGen_Generate_MazeEvents(Maze *maze) {
       int total_valid_neighbours = Get_ValidNeighbour(
           curr_node.current, neighbours, visited_cells, maze);
 
+      MazeEvents_Begin_Batch(events);
+      MazeEvents_Add_CellAction(events, curr_node.current, curr_node.parent,
+                                BREAK_WALL);
+      MazeEvents_Add_StateChange(events, curr_node.current, STATE_GENERATED);
+      MazeEvents_End_Batch(events);
+
       // Iterating through the neighbours and adding them to the queue
       for (int i = 0; i < total_valid_neighbours; i++) {
         random_queue[rear++] = (Node){neighbours[i], curr_node.current};
@@ -146,11 +158,6 @@ MazeEvents *PrimsGen_Generate_MazeEvents(Maze *maze) {
 
       visited_cells[Maze_Get_CellIndex(curr_node.current, maze)] = true;
       total_edges += 1;
-
-      MazeEvents_Add_CellAction(events, curr_node.current, curr_node.parent,
-                                BREAK_WALL);
-
-      MazeEvents_Add_StateChange(events, curr_node.current, STATE_GENERATED);
     }
 
     if (total_edges == total_nodes - 1) {

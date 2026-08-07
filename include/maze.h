@@ -17,8 +17,8 @@ typedef enum {
   STATE_GENERATED = 0x01, // When Maze has been fully generated
 
   // Specific flags
-  STATE_GEN_VISITED = 1 << 1,   // When Cell has been visited by gen algo
-  STATE_SOLVE_VISITED = 1 << 2, // When Cell has been visited by solving algo
+  STATE_GEN_VISITED = 1 << 1,    // When Cell has been visited by gen algo
+  STATE_SOLVE_EXPLORED = 1 << 2, // When Cell has been visited by solving algo
   STATE_FRONTIER = 1 << 3,
   STATE_BACKTRACKED = 1 << 4,
   STATE_SOLUTION = 1 << 5,
@@ -70,6 +70,8 @@ Maze *Maze_Create(int rows, int columns, CellPos start_cell, CellPos end_cell);
 void Maze_Break_Wall(Maze *maze, CellPos cell1, CellPos cell2);
 
 void Maze_Reset(Maze *maze);
+
+uint8_t Maze_Get_CellState(Maze *maze, CellPos cell_pos);
 
 void Maze_Set_CellState(Maze *maze, CellPos cell_pos, CellState cell_state);
 
