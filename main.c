@@ -1,5 +1,5 @@
-#include "include/colors.h"
-#include "include/state_manager.h"
+#include "colors.h"
+#include "state_manager.h"
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_events.h>
 #include <SDL3/SDL_init.h>
@@ -11,6 +11,8 @@
 
 #define SCR_WIDTH 900
 #define SCR_HEIGHT 900
+
+static void Set_SDL_Scaling(SDL_Window *window, SDL_Renderer *renderer);
 
 int main() {
 
@@ -53,6 +55,10 @@ int main() {
         break;
       }
     }
+
+    // Setting the screen scaling
+    Set_SDL_Scaling(window, renderer);
+
     SDL_Color bg = COLOR_RENDER_BACKGROUND;
     SDL_SetRenderDrawColor(renderer, bg.r, bg.g, bg.b, bg.a);
     SDL_RenderClear(renderer);
@@ -65,4 +71,16 @@ int main() {
   SDL_DestroyWindow(window);
   SDL_Quit();
   return 0;
+}
+
+static void Set_SDL_Scaling(SDL_Window *window, SDL_Renderer *renderer) {
+  int logical_w, logical_h;
+  int pixel_w, pixel_h;
+  SDL_GetWindowSize(window, &logical_w, &logical_h);
+  SDL_GetWindowSizeInPixels(window, &pixel_w, &pixel_h);
+
+  float scale_x = (float)pixel_w / (float)logical_w;
+  float scale_y = (float)pixel_h / (float)logical_h;
+
+  SDL_SetRenderScale(renderer, scale_x, scale_y);
 }

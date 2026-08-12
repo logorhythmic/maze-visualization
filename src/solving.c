@@ -1,4 +1,4 @@
-#include "../include/solving.h"
+#include "solving.h"
 #include <stdio.h>
 #include <stdlib.h>
 

@@ -1,4 +1,4 @@
-#include "../include/maze_events.h"
+#include "maze_events.h"
 #include <assert.h>
 #include <stdint.h>
 #include <stdio.h>

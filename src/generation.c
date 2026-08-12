@@ -1,4 +1,4 @@
-#include "../include/generation.h"
+#include "generation.h"
 #include <SDL3/SDL_stdinc.h>
 #include <assert.h>
 #include <stdio.h>

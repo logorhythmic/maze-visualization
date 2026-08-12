@@ -1,4 +1,4 @@
-#include "../include/maze.h"
+#include "maze.h"
 #include <stdio.h>
 #include <stdlib.h>
 

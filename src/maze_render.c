@@ -1,5 +1,5 @@
-#include "../include/maze_render.h"
-#include "../include/colors.h"
+#include "maze_render.h"
+#include "colors.h"
 #include <SDL3/SDL_pixels.h>
 #include <SDL3/SDL_rect.h>
 #include <SDL3/SDL_render.h>

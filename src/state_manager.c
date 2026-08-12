@@ -1,9 +1,9 @@
 #include "../include/state_manager.h"
-#include "../include/colors.h"
-#include "../include/generation.h"
-#include "../include/maze.h"
-#include "../include/maze_render.h"
-#include "../include/solving.h"
+#include "colors.h"
+#include "generation.h"
+#include "maze.h"
+#include "maze_render.h"
+#include "solving.h"
 #include <SDL3/SDL_events.h>
 #include <SDL3/SDL_render.h>
 #include <SDL3/SDL_stdinc.h>
