@@ -13,20 +13,21 @@
 #define SMALL
 
 #ifdef SMALL
-#define CELL_SIZE 100
-#define COLUMNS 8
-#define ROWS 8
+#define CELL_SIZE 20
+#define MAZE_START_POS ((Vector2){50, 50})
+#define COLUMNS 40
+#define ROWS 32
 #define TIME_DELAY_MS 600
 
 #else
-#define CELL_SIZE 25
+#define CELL_SIZE 22
+#define MAZE_START_POS ((Vector2){60, 25})
 #define COLUMNS 32
 #define ROWS 32
 #define TIME_DELAY_MS 90
 #endif
 
-#define MAZE_START_POS ((Vector2){45, 45})
-#define WALL_THICKNESS 4
+#define WALL_THICKNESS 2
 #define SOLN_LINE_THICK 0.90f
 
 typedef enum { MODE_NONE, MODE_GENERATING, MAZE_READY, MODE_SOLVING } MazeMode;
