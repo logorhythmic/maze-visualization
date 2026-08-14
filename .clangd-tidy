@@ -1,0 +1,9 @@
+Checks: >
+  -*,
+  readability-*,
+  bugprone-*,
+  performance-*,
+  modernize-*
+
+# Optional: Treat certain tidy warnings as errors or customize check details
+WarningsAsErrors: ''

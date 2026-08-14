@@ -11,11 +11,13 @@ struct MazeRender {
   SDL_Renderer *renderer;
   SDL_Color generated_bg_color;
   SDL_Color wall_color;
+
+  int cell_size;
   float soln_line_area;
   int wall_thickness;
-  int cell_size;
-  int start_pos_x;
-  int start_pos_y;
+
+  Vector2 view_dimensions;
+  Vector2 view_padding;
 };
 
 typedef union {
@@ -29,27 +31,34 @@ typedef union {
 static void DrawLineThick(SDL_Renderer *r, Line line, SDL_Color col,
                           int thickness) {
   SDL_SetRenderDrawColor(r, col.r, col.g, col.b, col.a);
-  Vector2 start_pos = line.start;
-  Vector2 end_pos = line.end;
+  // Get the actual scale SDL is applying (e.g., 1.25)
+  float scale_x, scale_y;
+  SDL_GetRenderScale(r, &scale_x, &scale_y);
 
-  if (end_pos.y != start_pos.y) {
-    SDL_FRect rect1 = {(float)start_pos.x, (float)start_pos.y, (float)thickness,
-                       (float)(end_pos.y - start_pos.y + thickness)};
+  float sx = SDL_roundf(line.start.x * scale_x) / scale_x;
+  float sy = SDL_roundf(line.start.y * scale_y) / scale_y;
+  float ex = SDL_roundf(line.end.x * scale_x) / scale_x;
+  float ey = SDL_roundf(line.end.y * scale_y) / scale_y;
+
+  float snapped_thickness = SDL_roundf(thickness * scale_x) / scale_x;
+
+  if (ey != sy) {
+    SDL_FRect rect1 = {(float)sx, (float)sy, (float)thickness,
+                       (float)(ey - sy + thickness)};
     SDL_RenderFillRect(r, &rect1);
     return;
   }
 
-  if (end_pos.x != start_pos.x) {
-    SDL_FRect rect2 = {(float)start_pos.x, (float)start_pos.y,
-                       (float)(end_pos.x - start_pos.x + thickness),
+  if (ex != sx) {
+    SDL_FRect rect2 = {(float)sx, (float)sy, (float)(ex - sx + thickness),
                        (float)(thickness)};
     SDL_RenderFillRect(r, &rect2);
     return;
   }
 }
 
-MazeRender *Maze_Render_Create(SDL_Renderer *renderer, int cell_size,
-                               Vector2 start_pos, int wall_thickness,
+MazeRender *Maze_Render_Create(SDL_Renderer *renderer, Vector2 view_dimensions,
+                               Vector2 view_padding, int wall_thickness,
                                SDL_Color wall_color, float soln_line_area,
                                SDL_Color generated_bg_color) {
   MazeRender *maze_render = calloc(1, sizeof(MazeRender));
@@ -58,9 +67,9 @@ MazeRender *Maze_Render_Create(SDL_Renderer *renderer, int cell_size,
   maze_render->generated_bg_color = generated_bg_color;
   maze_render->wall_thickness = wall_thickness;
   maze_render->soln_line_area = soln_line_area;
-  maze_render->cell_size = cell_size;
-  maze_render->start_pos_x = start_pos.x;
-  maze_render->start_pos_y = start_pos.y;
+  maze_render->view_dimensions = view_dimensions;
+  maze_render->view_padding = view_padding;
+  maze_render->cell_size = 0;
   return maze_render;
 }
 
@@ -279,13 +288,21 @@ static void Render_Cell_Interior(CellPos cell_pos, Vector2 top_left, Maze *maze,
     }
   }
 }
+#define MIN(a, b) (((a) < (b)) ? (a) : (b))
 
 void Maze_Render(MazeRender *maze_render, Maze *maze) {
-  int start_x = maze_render->start_pos_x;
-  int start_y = maze_render->start_pos_y;
+
+  Vector2 view_dimensions = maze_render->view_dimensions;
+  Vector2 padding = maze_render->view_padding;
+  int cell_size = (int)MIN((view_dimensions.x - 2 * padding.x) / maze->columns,
+                           (view_dimensions.y - 2 * padding.y) / maze->rows);
+  int start_x = (int)((view_dimensions.x - cell_size * maze->columns) / 2.0f);
+  int start_y = (int)((view_dimensions.y - cell_size * maze->rows) / 2.0f);
+
+  maze_render->cell_size = cell_size;
+
   int curr_x = start_x;
   int curr_y = start_y;
-  int cell_size = maze_render->cell_size;
   SDL_Renderer *r = maze_render->renderer;
 
   // Drawing the generated color rect behind the maze

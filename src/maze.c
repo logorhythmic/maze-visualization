@@ -2,6 +2,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define MAX_MAZE_ROW 900
+#define MAZ_MAZE_COL 900
+
 static inline int get_cell_index(CellPos cp, Maze *maze) {
   return cp.row * maze->columns + cp.col;
 }

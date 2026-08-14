@@ -79,7 +79,7 @@ void Draw_Gui_Frame(GuiInfo *gi) {
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
     // 1. Define location and size
-    ImVec2 size = ImVec2(300.0f, gi->window_height);
+    ImVec2 size = ImVec2(GUI_WIDTH, gi->window_height);
     ImVec2 pos = ImVec2(gi->window_width - (size.x + 2), 2);
 
     ImGui::SetNextWindowPos(pos, ImGuiCond_Always);

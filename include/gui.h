@@ -6,6 +6,7 @@
 extern "C" {
 #endif
 
+#define GUI_WIDTH 300
 typedef struct GuiInfo GuiInfo;
 GuiInfo *Create_Gui_Info(SDL_Window *window, SDL_Renderer *renderer,
                          SDL_Event *event);

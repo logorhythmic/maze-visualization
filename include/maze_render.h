@@ -10,8 +10,8 @@ typedef struct {
   int y;
 } Vector2;
 
-MazeRender *Maze_Render_Create(SDL_Renderer *renderer, int cell_size,
-                               Vector2 maze_start_pos, int wall_thickness,
+MazeRender *Maze_Render_Create(SDL_Renderer *renderer, Vector2 view_port,
+                               Vector2 view_padding, int wall_thickness,
                                SDL_Color wall_color, float soln_line_area,
                                SDL_Color generated_bg_color);
 

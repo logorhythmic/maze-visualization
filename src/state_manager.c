@@ -1,6 +1,7 @@
 #include "../include/state_manager.h"
 #include "colors.h"
 #include "generation.h"
+#include "gui.h"
 #include "maze.h"
 #include "maze_render.h"
 #include "solving.h"
@@ -10,25 +11,23 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define SMALL
+// #define SMALL
 
 #ifdef SMALL
-#define CELL_SIZE 20
 #define MAZE_START_POS ((Vector2){50, 50})
 #define COLUMNS 40
 #define ROWS 32
-#define TIME_DELAY_MS 600
+#define TIME_DELAY_MS 10
 
 #else
-#define CELL_SIZE 22
 #define MAZE_START_POS ((Vector2){60, 25})
-#define COLUMNS 32
-#define ROWS 32
+#define COLUMNS 64
+#define ROWS 64
 #define TIME_DELAY_MS 90
 #endif
 
-#define WALL_THICKNESS 2
-#define SOLN_LINE_THICK 0.90f
+#define WALL_THICKNESS 1
+#define SOLN_LINE_THICK 0.45f
 
 typedef enum { MODE_NONE, MODE_GENERATING, MAZE_READY, MODE_SOLVING } MazeMode;
 
@@ -50,10 +49,6 @@ struct State {
   MazeMode maze_mode;
 };
 
-void Set_Maze_Ends(Maze *maze) {
-
-};
-
 State *State_Create(SDL_Renderer *renderer) {
   State *state = calloc(1, sizeof(State));
   // CellPos start_cell = {SDL_rand(ROWS), SDL_rand(COLUMNS)};
@@ -63,12 +58,20 @@ State *State_Create(SDL_Renderer *renderer) {
   CellPos end_cell = {ROWS - 1, COLUMNS - 1};
 
   state->maze = Maze_Create(ROWS, COLUMNS, start_cell, end_cell);
-  state->maze_render =
-      Maze_Render_Create(renderer, CELL_SIZE, MAZE_START_POS, WALL_THICKNESS,
-                         COL_WALL, SOLN_LINE_THICK, COL_STATE_GENERATED);
+
+  int w, h;
+  SDL_Window *window = SDL_GetRenderWindow(renderer);
+  SDL_GetWindowSize(window, &w, &h); // 900, 900
+
+  Vector2 view_dimensions = {w - GUI_WIDTH, h};
+  Vector2 view_padding = {40, 40};
+  state->maze_render = Maze_Render_Create(
+      renderer, view_dimensions, view_padding, WALL_THICKNESS, COL_WALL,
+      SOLN_LINE_THICK, COL_STATE_GENERATED);
   state->maze_mode = MODE_NONE;
   state->time_delay = TIME_DELAY_MS;
   state->current_events = NULL;
+
   return state;
 }
 
