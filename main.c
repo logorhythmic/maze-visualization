@@ -64,7 +64,7 @@ int main() {
       }
     }
 
-    Draw_Gui_Frame(gi);
+    Draw_Gui_Frame(state, gi);
 
     // Setting the screen scaling
     Set_SDL_Scaling(window, renderer);

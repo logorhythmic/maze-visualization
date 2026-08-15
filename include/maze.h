@@ -35,11 +35,10 @@ struct CellPos {
 
 struct Cell {
   uint8_t cell_state;
-  CellPos cell_pos;
-  bool path_north;
-  bool path_south;
-  bool path_east;
-  bool path_west;
+  bool path_north : 1;
+  bool path_south : 1;
+  bool path_east : 1;
+  bool path_west : 1;
 };
 
 struct Maze {
@@ -65,11 +64,15 @@ static inline int Maze_Get_CellIndex(CellPos cp, Maze *maze) {
   return cp.row * maze->columns + cp.col;
 }
 
-Maze *Maze_Create(int rows, int columns, CellPos start_cell, CellPos end_cell);
+Maze *Maze_Create();
 
 void Maze_Break_Wall(Maze *maze, CellPos cell1, CellPos cell2);
 
 void Maze_Reset(Maze *maze);
+
+void Maze_Set_Dimensions(Maze *maze, int rows, int columns);
+
+void Maze_Set_Endpoints(Maze *maze, CellPos start, CellPos end);
 
 uint8_t Maze_Get_CellState(Maze *maze, CellPos cell_pos);
 

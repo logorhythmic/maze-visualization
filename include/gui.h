@@ -1,4 +1,5 @@
 #pragma once
+#include "state_manager.h"
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_events.h>
 
@@ -13,7 +14,7 @@ GuiInfo *Create_Gui_Info(SDL_Window *window, SDL_Renderer *renderer,
 
 void Process_Gui_Event(GuiInfo *gi);
 
-void Draw_Gui_Frame(GuiInfo *gi);
+void Draw_Gui_Frame(State *state, GuiInfo *gi);
 
 void Render_Gui_Frame(GuiInfo *gi);
 

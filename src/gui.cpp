@@ -1,12 +1,16 @@
 #include "gui.h"
+#include "Font.h"
 #include "imgui.h"
 #include "imgui_impl_sdl3.h"
 #include "imgui_impl_sdlrenderer3.h"
-#include "imgui_internal.h"
+#include "state_manager.h"
 #include <SDL3/SDL_render.h>
 #include <SDL3/SDL_video.h>
 #include <algorithm>
+#include <ctime>
 #include <stdio.h>
+
+#define Clamp(x, a, b) (((x) < (a)) ? (a) : (((x) > (b)) ? (b) : (x)))
 
 struct GuiInfo {
   SDL_Window *window;
@@ -19,6 +23,9 @@ struct GuiInfo {
 
 GuiInfo *Create_Gui_Info(SDL_Window *window, SDL_Renderer *renderer,
                          SDL_Event *event) {
+
+  // Initalizing random seed
+  std::srand(std::time(0));
 
   GuiInfo *gi = new GuiInfo{};
   gi->window = window;
@@ -33,8 +40,8 @@ GuiInfo *Create_Gui_Info(SDL_Window *window, SDL_Renderer *renderer,
   io.ConfigFlags |=
       ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
   io.IniFilename = nullptr;               // Disable .ini files
-  io.Fonts->AddFontFromFileTTF("vendor/imgui/PlusJakartaSans-Medium.ttf",
-                               18.0f);
+  io.Fonts->AddFontFromMemoryCompressedTTF(
+      FontData_compressed_data, sizeof(FontData_compressed_data), 18.0f);
 
   // Setup Dear ImGui style
   ImGui::StyleColorsDark();
@@ -43,14 +50,18 @@ GuiInfo *Create_Gui_Info(SDL_Window *window, SDL_Renderer *renderer,
   // Setup scaling
   float main_scale = SDL_GetDisplayContentScale(SDL_GetPrimaryDisplay());
   ImGuiStyle &style = ImGui::GetStyle();
-  style.ScaleAllSizes(
-      main_scale); // Bake a fixed style scale. (until we have a solution for
-                   // dynamic style scaling, changing this requires resetting
-                   // Style + calling this again)
-  style.FontScaleDpi =
-      main_scale; // Set initial font scale. (in docking branch: using
-                  // io.ConfigDpiScaleFonts=true automatically overrides this
-                  // for every window depending on the current monitor)
+  style.ScaleAllSizes(main_scale); // Bake a fixed style scale.
+                                   // (until we have a solution for
+                                   // dynamic style scaling,
+                                   // changing this requires
+                                   // resetting Style + calling
+                                   // this again)
+  style.FontScaleDpi = main_scale; // Set initial font scale. (in
+                                   // docking branch: using
+                                   // io.ConfigDpiScaleFonts=true
+                                   // automatically overrides this
+                                   // for every window depending on
+                                   // the current monitor)
 
   SDL_GetWindowSize(window, &gi->window_width, &gi->window_height);
   // Setup Platform/Renderer backends
@@ -62,7 +73,7 @@ GuiInfo *Create_Gui_Info(SDL_Window *window, SDL_Renderer *renderer,
 
 void Process_Gui_Event(GuiInfo *gi) { ImGui_ImplSDL3_ProcessEvent(gi->event); }
 
-void Draw_Gui_Frame(GuiInfo *gi) {
+void Draw_Gui_Frame(State *state, GuiInfo *gi) {
 
   // Start the Dear ImGui frame
   ImGui_ImplSDLRenderer3_NewFrame();
@@ -109,10 +120,10 @@ void Draw_Gui_Frame(GuiInfo *gi) {
       ImGui::Separator();
       ImGui::Dummy(ImVec2(0.0f, 5.0f));
 
-      static int rows = 10;
-      static int columns = 10;
-      static int startPos[2] = {0, 0};
-      static int endPos[2] = {columns - 1, rows - 1};
+      static int rows = DEFAULT_ROWS;
+      static int columns = DEFAULT_COLUMNS;
+      static int start_pos[2] = {0, 0};
+      static int end_pos[2] = {DEFAULT_ROWS - 1, DEFAULT_COLUMNS - 1};
 
       if (ImGui::BeginTable("ConfigTable", 2,
                             ImGuiTableFlags_SizingStretchProp)) {
@@ -127,7 +138,15 @@ void Draw_Gui_Frame(GuiInfo *gi) {
 
         ImGui::TableSetColumnIndex(1);
         ImGui::SetNextItemWidth(-FLT_MIN);
-        ImGui::InputInt("##Rows", &rows, 1, 5);
+
+        if (ImGui::InputInt("##Rows", &rows, 1, 5)) {
+          rows = Clamp(rows, MIN_ROWS, MAX_ROWS);
+          end_pos[0] = rows - 1;
+          printf("Rows Changed. Passing in: %d\n", rows);
+          State_Set_MazeDimensions(state, rows, columns);
+          State_Set_MazeEndpoints(state, start_pos[0], start_pos[1], end_pos[0],
+                                  end_pos[1]);
+        }
 
         ImGui::TableNextRow();
         ImGui::TableSetColumnIndex(0);
@@ -136,7 +155,14 @@ void Draw_Gui_Frame(GuiInfo *gi) {
 
         ImGui::TableSetColumnIndex(1);
         ImGui::SetNextItemWidth(-FLT_MIN);
-        ImGui::InputInt("##Columns", &columns, 1, 5);
+
+        if (ImGui::InputInt("##Columns", &columns, 1, 5)) {
+          columns = Clamp(columns, MIN_COLUMNS, MAX_COLUMNS);
+          end_pos[1] = columns - 1;
+          State_Set_MazeDimensions(state, rows, columns);
+          State_Set_MazeEndpoints(state, start_pos[0], start_pos[1], end_pos[0],
+                                  end_pos[1]);
+        }
 
         ImGui::TableNextRow();
         ImGui::TableSetColumnIndex(0);
@@ -145,7 +171,12 @@ void Draw_Gui_Frame(GuiInfo *gi) {
 
         ImGui::TableSetColumnIndex(1);
         ImGui::SetNextItemWidth(-FLT_MIN);
-        ImGui::DragInt2("##StartPos", startPos, 1.0f, 0, 100);
+        if (ImGui::DragInt2("##StartPos", start_pos, 1.0f, 0, 100)) {
+          start_pos[0] = Clamp(start_pos[0], 0, rows - 1);
+          start_pos[1] = Clamp(start_pos[1], 0, columns - 1);
+          State_Set_MazeEndpoints(state, start_pos[0], start_pos[1], end_pos[0],
+                                  end_pos[1]);
+        }
 
         ImGui::TableNextRow();
         ImGui::TableSetColumnIndex(0);
@@ -154,7 +185,12 @@ void Draw_Gui_Frame(GuiInfo *gi) {
 
         ImGui::TableSetColumnIndex(1);
         ImGui::SetNextItemWidth(-FLT_MIN);
-        ImGui::DragInt2("##EndPos", endPos, 1.0f, 0, 100);
+        if (ImGui::DragInt2("##EndPos", end_pos, 1.0f, 0, 100)) {
+          end_pos[0] = Clamp(end_pos[0], 0, rows - 1);
+          end_pos[1] = Clamp(end_pos[1], 0, columns - 1);
+          State_Set_MazeEndpoints(state, start_pos[0], start_pos[1], end_pos[0],
+                                  end_pos[1]);
+        }
 
         ImGui::EndTable();
       }
@@ -163,7 +199,15 @@ void Draw_Gui_Frame(GuiInfo *gi) {
 
       ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 4.0f);
       if (ImGui::Button("Randomize Start & End", ImVec2(-FLT_MIN, 30.0f))) {
-        // Randomize logic here
+        int max_row = rows;
+        int max_col = columns;
+        start_pos[0] = std::rand() % (max_row);
+        start_pos[1] = std::rand() % (max_col);
+        end_pos[0] = std::rand() % (max_row);
+        end_pos[0] = std::rand() % (max_col);
+
+        State_Set_MazeEndpoints(state, start_pos[0], start_pos[1], end_pos[0],
+                                end_pos[1]);
       }
       ImGui::PopStyleVar();
     }

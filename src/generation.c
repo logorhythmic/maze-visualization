@@ -124,8 +124,10 @@ MazeEvents *PrimsGen_Generate_MazeEvents(Maze *maze) {
 
   Node *random_queue = calloc(maze->total_cells * 2, sizeof(Node));
   int rear = 0;
-  CellPos random_start_cell = {SDL_rand(maze->rows), SDL_rand(maze->columns)};
-  random_queue[rear++] = (Node){random_start_cell, (CellPos){-1, -1}};
+  // CellPos random_start_cell = {SDL_rand(maze->rows),
+  // SDL_rand(maze->columns)};
+  CellPos start_cell = maze->start_cell;
+  random_queue[rear++] = (Node){start_cell, (CellPos){-1, -1}};
 
   MazeEvents *events = MazeEvents_Create(total_events);
 

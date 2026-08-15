@@ -1,35 +1,41 @@
 #include "maze.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define MAX_MAZE_ROW 900
-#define MAZ_MAZE_COL 900
+#define MAX_MAZE_COL 900
+#define MAX_MAZE_SIZE MAX_MAZE_ROW *MAX_MAZE_COL
 
 static inline int get_cell_index(CellPos cp, Maze *maze) {
   return cp.row * maze->columns + cp.col;
 }
 
-Maze *Maze_Create(int rows, int columns, CellPos start_cell, CellPos end_cell) {
+Maze *Maze_Create() {
   Maze *maze = calloc(1, sizeof(Maze));
-
-  if (maze == NULL) {
-    fprintf(stderr, "Error: Calloc failed for maze allocation");
-    return NULL;
-  }
-  int total_cells = rows * columns;
-  Cell *grid = calloc(total_cells, sizeof(Cell));
-
-  if (grid == NULL) {
-    fprintf(stderr, "Error: Calloc failed for grid allocation");
-    return NULL;
-  }
+  Cell *grid = calloc(MAX_MAZE_SIZE, sizeof(Cell));
   maze->grid = grid;
-  maze->start_cell = start_cell;
-  maze->end_cell = end_cell;
+  maze->rows = 0;
+  maze->columns = 0;
+  maze->total_cells = 0;
+  return maze;
+}
+
+void Maze_Set_Dimensions(Maze *maze, int rows, int columns) {
+  if (maze == NULL) {
+    fprintf(stderr, "Error: Maze Pointer is NULL\n");
+    return;
+  }
+  memset(maze->grid, 0, sizeof(Cell) * maze->total_cells);
   maze->rows = rows;
   maze->columns = columns;
-  maze->total_cells = total_cells;
-  return maze;
+  maze->total_cells = rows * columns;
+  Maze_Reset(maze);
+}
+
+void Maze_Set_Endpoints(Maze *maze, CellPos start, CellPos end) {
+  maze->start_cell = start;
+  maze->end_cell = end;
 }
 
 void Maze_Reset(Maze *maze) {

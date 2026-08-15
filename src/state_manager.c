@@ -1,4 +1,4 @@
-#include "../include/state_manager.h"
+#include "state_manager.h"
 #include "colors.h"
 #include "generation.h"
 #include "gui.h"
@@ -13,18 +13,7 @@
 
 // #define SMALL
 
-#ifdef SMALL
-#define MAZE_START_POS ((Vector2){50, 50})
-#define COLUMNS 40
-#define ROWS 32
-#define TIME_DELAY_MS 10
-
-#else
-#define MAZE_START_POS ((Vector2){60, 25})
-#define COLUMNS 64
-#define ROWS 64
 #define TIME_DELAY_MS 90
-#endif
 
 #define WALL_THICKNESS 1
 #define SOLN_LINE_THICK 0.45f
@@ -55,16 +44,18 @@ State *State_Create(SDL_Renderer *renderer) {
   // CellPos end_cell = {SDL_rand(ROWS), SDL_rand(COLUMNS)};
 
   CellPos start_cell = {0, 0};
-  CellPos end_cell = {ROWS - 1, COLUMNS - 1};
+  CellPos end_cell = {DEFAULT_ROWS - 1, DEFAULT_COLUMNS - 1};
 
-  state->maze = Maze_Create(ROWS, COLUMNS, start_cell, end_cell);
+  state->maze = Maze_Create();
+  Maze_Set_Dimensions(state->maze, DEFAULT_ROWS, DEFAULT_COLUMNS);
+  Maze_Set_Endpoints(state->maze, start_cell, end_cell);
 
   int w, h;
   SDL_Window *window = SDL_GetRenderWindow(renderer);
   SDL_GetWindowSize(window, &w, &h); // 900, 900
 
   Vector2 view_dimensions = {w - GUI_WIDTH, h};
-  Vector2 view_padding = {40, 40};
+  Vector2 view_padding = {20, 20};
   state->maze_render = Maze_Render_Create(
       renderer, view_dimensions, view_padding, WALL_THICKNESS, COL_WALL,
       SOLN_LINE_THICK, COL_STATE_GENERATED);
@@ -73,6 +64,17 @@ State *State_Create(SDL_Renderer *renderer) {
   state->current_events = NULL;
 
   return state;
+}
+
+void State_Set_MazeDimensions(State *state, int row, int columns) {
+  Maze_Set_Dimensions(state->maze, row, columns);
+}
+
+void State_Set_MazeEndpoints(State *state, int start_x, int start_y, int end_x,
+                             int end_y) {
+  CellPos start = {start_x, start_y};
+  CellPos end = {end_x, end_y};
+  Maze_Set_Endpoints(state->maze, start, end);
 }
 
 void Event_DFSGen(State *state) {

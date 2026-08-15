@@ -3,6 +3,7 @@
 #include <SDL3/SDL_pixels.h>
 #include <SDL3/SDL_rect.h>
 #include <SDL3/SDL_render.h>
+#include <assert.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -292,6 +293,7 @@ static void Render_Cell_Interior(CellPos cell_pos, Vector2 top_left, Maze *maze,
 
 void Maze_Render(MazeRender *maze_render, Maze *maze) {
 
+  assert(maze->columns > 0 && maze->rows > 0);
   Vector2 view_dimensions = maze_render->view_dimensions;
   Vector2 padding = maze_render->view_padding;
   int cell_size = (int)MIN((view_dimensions.x - 2 * padding.x) / maze->columns,
