@@ -8,17 +8,16 @@ extern "C" {
 #endif
 
 #define GUI_WIDTH 300
-typedef struct GuiInfo GuiInfo;
-GuiInfo *Create_Gui_Info(SDL_Window *window, SDL_Renderer *renderer,
-                         SDL_Event *event);
 
-void Process_Gui_Event(GuiInfo *gi);
+void GUI_Init(SDL_Window *window, SDL_Renderer *renderer);
 
-void Draw_Gui_Frame(State *state, GuiInfo *gi);
+void GUI_Process_Event(SDL_Event *event);
 
-void Render_Gui_Frame(GuiInfo *gi);
+void GUI_Draw_Frame(MazeUIState *ui_state, MazeContext *ctx);
 
-void Destroy_Gui(GuiInfo *gi);
+void GUI_Render_Frame(SDL_Renderer *renderer);
+
+void GUI_Deinit();
 
 #ifdef __cplusplus
 }

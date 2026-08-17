@@ -9,7 +9,6 @@
 #include <stdlib.h>
 
 struct MazeRender {
-  SDL_Renderer *renderer;
   SDL_Color generated_bg_color;
   SDL_Color wall_color;
 
@@ -58,12 +57,11 @@ static void DrawLineThick(SDL_Renderer *r, Line line, SDL_Color col,
   }
 }
 
-MazeRender *Maze_Render_Create(SDL_Renderer *renderer, Vector2 view_dimensions,
-                               Vector2 view_padding, int wall_thickness,
-                               SDL_Color wall_color, float soln_line_area,
+MazeRender *Maze_Render_Create(Vector2 view_dimensions, Vector2 view_padding,
+                               int wall_thickness, SDL_Color wall_color,
+                               float soln_line_area,
                                SDL_Color generated_bg_color) {
   MazeRender *maze_render = calloc(1, sizeof(MazeRender));
-  maze_render->renderer = renderer;
   maze_render->wall_color = wall_color;
   maze_render->generated_bg_color = generated_bg_color;
   maze_render->wall_thickness = wall_thickness;
@@ -74,18 +72,19 @@ MazeRender *Maze_Render_Create(SDL_Renderer *renderer, Vector2 view_dimensions,
   return maze_render;
 }
 
-static void draw_cell_connect(CellPos curr_pos, CellState connect_state,
-                              Vector2 top_left, SDL_Color fill_col,
-                              MazeRender *maze_render, Maze *maze) {
+static void draw_cell_connect(SDL_Renderer *renderer, CellPos curr_pos,
+                              CellState connect_state, Vector2 top_left,
+                              SDL_Color fill_col, MazeRender *maze_render,
+                              Maze *maze) {
   // Additive rendering
   //  We render a block in the middle of the cell
   //  Then depending on if the adjacent cells are solution cells, we add blocks
   //  to render
 
+  SDL_Renderer *r = renderer;
   Cell *cell = &maze->grid[Maze_Get_CellIndex(curr_pos, maze)];
   float cell_size = maze_render->cell_size;
   float wall_thickness = maze_render->wall_thickness;
-  SDL_Renderer *r = maze_render->renderer;
 
   float mid_rect_area = maze_render->soln_line_area;
 
@@ -165,12 +164,11 @@ static void draw_cell_connect(CellPos curr_pos, CellState connect_state,
   SDL_RenderFillRect(r, &centre_rect);
 }
 
-static void draw_cell_fill_full(Vector2 top_left, SDL_Color fill_col,
-                                MazeRender *maze_render) {
+static void draw_cell_fill_full(SDL_Renderer *r, Vector2 top_left,
+                                SDL_Color fill_col, MazeRender *maze_render) {
 
   float cell_size = maze_render->cell_size;
   float wall_thickness = maze_render->wall_thickness;
-  SDL_Renderer *r = maze_render->renderer;
   float inner_start_x = (float)top_left.x + wall_thickness;
   float inner_start_y = (float)top_left.y + wall_thickness;
 
@@ -179,12 +177,12 @@ static void draw_cell_fill_full(Vector2 top_left, SDL_Color fill_col,
   SDL_RenderFillRect(r, &rect);
 }
 
-static void draw_cell_fill_offset(Vector2 top_left, SDL_Color fill_col,
-                                  MazeRender *maze_render, float offset) {
+static void draw_cell_fill_offset(SDL_Renderer *r, Vector2 top_left,
+                                  SDL_Color fill_col, MazeRender *maze_render,
+                                  float offset) {
 
   float cell_size = maze_render->cell_size;
   float wall_thickness = maze_render->wall_thickness;
-  SDL_Renderer *r = maze_render->renderer;
   float inner_start_x = (float)top_left.x + wall_thickness;
   float inner_start_y = (float)top_left.y + wall_thickness;
 
@@ -194,11 +192,11 @@ static void draw_cell_fill_offset(Vector2 top_left, SDL_Color fill_col,
   SDL_RenderFillRect(r, &rect);
 }
 
-static void Render_Cell_Wall(CellPos cell_pos, Vector2 current_pos, Maze *maze,
+static void Render_Cell_Wall(SDL_Renderer *r, CellPos cell_pos,
+                             Vector2 current_pos, Maze *maze,
                              MazeRender *maze_render) {
 
   Cell curr_cell = maze->grid[Maze_Get_CellIndex(cell_pos, maze)];
-  SDL_Renderer *r = maze_render->renderer;
   int curr_x = current_pos.x;
   int curr_y = current_pos.y;
   int cell_size = maze_render->cell_size;
@@ -241,7 +239,8 @@ static void Render_Cell_Wall(CellPos cell_pos, Vector2 current_pos, Maze *maze,
 }
 //
 
-static void Render_Cell_Interior(CellPos cell_pos, Vector2 top_left, Maze *maze,
+static void Render_Cell_Interior(SDL_Renderer *r, CellPos cell_pos,
+                                 Vector2 top_left, Maze *maze,
                                  MazeRender *maze_render) {
 
   Cell curr_cell = maze->grid[Maze_Get_CellIndex(cell_pos, maze)];
@@ -253,30 +252,30 @@ static void Render_Cell_Interior(CellPos cell_pos, Vector2 top_left, Maze *maze,
   case STATE_BLANK:
 
     if (state & STATE_FRONTIER) {
-      draw_cell_fill_full(top_left, COL_STATE_FRONTIER, maze_render);
+      draw_cell_fill_full(r, top_left, COL_STATE_FRONTIER, maze_render);
 
     } else if (state & STATE_BACKTRACKED) {
-      draw_cell_fill_full(top_left, COL_STATE_BACKTRACKED, maze_render);
+      draw_cell_fill_full(r, top_left, COL_STATE_BACKTRACKED, maze_render);
 
     } else if (state & STATE_GEN_VISITED) {
-      draw_cell_fill_full(top_left, COL_STATE_GEN_VISITED, maze_render);
+      draw_cell_fill_full(r, top_left, COL_STATE_GEN_VISITED, maze_render);
 
     } else if (state == STATE_BLANK) {
-      draw_cell_fill_full(top_left, COL_STATE_BLANK, maze_render);
+      draw_cell_fill_full(r, top_left, COL_STATE_BLANK, maze_render);
     }
     break;
 
   case STATE_GENERATED:
-    draw_cell_fill_full(top_left, COL_STATE_GENERATED, maze_render);
+    draw_cell_fill_full(r, top_left, COL_STATE_GENERATED, maze_render);
 
     if (state & STATE_SOLVE_EXPLORED) {
-      draw_cell_connect(cell_pos, (STATE_SOLVE_EXPLORED | STATE_FRONTIER),
+      draw_cell_connect(r, cell_pos, (STATE_SOLVE_EXPLORED | STATE_FRONTIER),
                         top_left, COL_STATE_SOLVE_VISITED, maze_render, maze);
     }
 
     if (state & STATE_SOLUTION) {
-      draw_cell_connect(cell_pos, STATE_SOLUTION, top_left, COL_STATE_SOLUTION,
-                        maze_render, maze);
+      draw_cell_connect(r, cell_pos, STATE_SOLUTION, top_left,
+                        COL_STATE_SOLUTION, maze_render, maze);
     }
 
     if (state & STATE_FRONTIER) {
@@ -284,14 +283,14 @@ static void Render_Cell_Interior(CellPos cell_pos, Vector2 top_left, Maze *maze,
       // Vector2 custom = {top_left.x + offset, top_left.y + offset};
       // draw_cell_fill_offset(custom, COL_STATE_FRONTIER, maze_render,
       // -offset);
-      draw_cell_connect(cell_pos, STATE_SOLVE_EXPLORED, top_left,
+      draw_cell_connect(r, cell_pos, STATE_SOLVE_EXPLORED, top_left,
                         COL_STATE_FRONTIER, maze_render, maze);
     }
   }
 }
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
 
-void Maze_Render(MazeRender *maze_render, Maze *maze) {
+void Maze_Render(SDL_Renderer *r, MazeRender *maze_render, Maze *maze) {
 
   assert(maze->columns > 0 && maze->rows > 0);
   Vector2 view_dimensions = maze_render->view_dimensions;
@@ -305,7 +304,6 @@ void Maze_Render(MazeRender *maze_render, Maze *maze) {
 
   int curr_x = start_x;
   int curr_y = start_y;
-  SDL_Renderer *r = maze_render->renderer;
 
   // Drawing the generated color rect behind the maze
   SDL_FRect full_maze_rect = {start_x, start_y, maze->columns * cell_size,
@@ -319,8 +317,8 @@ void Maze_Render(MazeRender *maze_render, Maze *maze) {
       CellPos cell_pos = {row, col};
       Vector2 top_left = {curr_x, curr_y};
 
-      Render_Cell_Interior(cell_pos, top_left, maze, maze_render);
-      Render_Cell_Wall(cell_pos, top_left, maze, maze_render);
+      Render_Cell_Interior(r, cell_pos, top_left, maze, maze_render);
+      Render_Cell_Wall(r, cell_pos, top_left, maze, maze_render);
 
       curr_x += cell_size;
     }
@@ -336,12 +334,12 @@ void Maze_Render(MazeRender *maze_render, Maze *maze) {
                  (maze->end_cell.row * cell_size) + start_y};
 
   // Filling Start and end Cell with color
-  draw_cell_fill_full(start, COL_START_CELL, maze_render);
-  draw_cell_fill_full(end, COL_END_CELL, maze_render);
+  draw_cell_fill_full(r, start, COL_START_CELL, maze_render);
+  draw_cell_fill_full(r, end, COL_END_CELL, maze_render);
 
   // Rendering the start and end cell walls
-  Render_Cell_Wall(maze->start_cell, start, maze, maze_render);
-  Render_Cell_Wall(maze->end_cell, end, maze, maze_render);
+  Render_Cell_Wall(r, maze->start_cell, start, maze, maze_render);
+  Render_Cell_Wall(r, maze->end_cell, end, maze, maze_render);
 
   //-------------------------------------------------------------------------
 }

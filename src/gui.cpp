@@ -6,31 +6,17 @@
 #include "state_manager.h"
 #include <SDL3/SDL_render.h>
 #include <SDL3/SDL_video.h>
-#include <algorithm>
+#include <cmath>
+#include <cstdlib>
 #include <ctime>
 #include <stdio.h>
 
 #define Clamp(x, a, b) (((x) < (a)) ? (a) : (((x) > (b)) ? (b) : (x)))
 
-struct GuiInfo {
-  SDL_Window *window;
-  SDL_Renderer *renderer;
-  SDL_Event *event;
-
-  int window_width;
-  int window_height;
-};
-
-GuiInfo *Create_Gui_Info(SDL_Window *window, SDL_Renderer *renderer,
-                         SDL_Event *event) {
+void GUI_Init(SDL_Window *window, SDL_Renderer *renderer) {
 
   // Initalizing random seed
   std::srand(std::time(0));
-
-  GuiInfo *gi = new GuiInfo{};
-  gi->window = window;
-  gi->renderer = renderer;
-  gi->event = event;
 
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
@@ -63,17 +49,15 @@ GuiInfo *Create_Gui_Info(SDL_Window *window, SDL_Renderer *renderer,
                                    // for every window depending on
                                    // the current monitor)
 
-  SDL_GetWindowSize(window, &gi->window_width, &gi->window_height);
+  // SDL_GetWindowSize(window, &gi->window_width, &gi->window_height);
   // Setup Platform/Renderer backends
   ImGui_ImplSDL3_InitForSDLRenderer(window, renderer);
   ImGui_ImplSDLRenderer3_Init(renderer);
-
-  return gi;
 }
 
-void Process_Gui_Event(GuiInfo *gi) { ImGui_ImplSDL3_ProcessEvent(gi->event); }
+void GUI_Process_Event(SDL_Event *event) { ImGui_ImplSDL3_ProcessEvent(event); }
 
-void Draw_Gui_Frame(State *state, GuiInfo *gi) {
+void GUI_Draw_Frame(MazeUIState *ui, MazeContext *ctx) {
 
   // Start the Dear ImGui frame
   ImGui_ImplSDLRenderer3_NewFrame();
@@ -89,9 +73,19 @@ void Draw_Gui_Frame(State *state, GuiInfo *gi) {
     bool show_another_window = false;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
-    // 1. Define location and size
-    ImVec2 size = ImVec2(GUI_WIDTH, gi->window_height);
-    ImVec2 pos = ImVec2(gi->window_width - (size.x + 2), 2);
+    // // 1. Define location and size
+    // ImVec2 size = ImVec2(GUI_WIDTH, window_height);
+    // ImVec2 pos = ImVec2(window_width - (size.x + 2), 2);
+
+    ImGuiViewport *viewport = ImGui::GetMainViewport();
+
+    ImVec2 size = ImVec2(GUI_WIDTH, viewport->WorkSize.y);
+    ImVec2 pos =
+        ImVec2(viewport->WorkPos.x + viewport->WorkSize.x - (size.x + 2),
+               viewport->WorkPos.y + 2);
+
+    ImGui::SetNextWindowPos(pos, ImGuiCond_Always);
+    ImGui::SetNextWindowSize(size, ImGuiCond_Always);
 
     ImGui::SetNextWindowPos(pos, ImGuiCond_Always);
     ImGui::SetNextWindowSize(size, ImGuiCond_Always);
@@ -120,11 +114,6 @@ void Draw_Gui_Frame(State *state, GuiInfo *gi) {
       ImGui::Separator();
       ImGui::Dummy(ImVec2(0.0f, 5.0f));
 
-      static int rows = DEFAULT_ROWS;
-      static int columns = DEFAULT_COLUMNS;
-      static int start_pos[2] = {0, 0};
-      static int end_pos[2] = {DEFAULT_ROWS - 1, DEFAULT_COLUMNS - 1};
-
       if (ImGui::BeginTable("ConfigTable", 2,
                             ImGuiTableFlags_SizingStretchProp)) {
         ImGui::TableSetupColumn("Label", ImGuiTableColumnFlags_WidthFixed,
@@ -139,13 +128,11 @@ void Draw_Gui_Frame(State *state, GuiInfo *gi) {
         ImGui::TableSetColumnIndex(1);
         ImGui::SetNextItemWidth(-FLT_MIN);
 
-        if (ImGui::InputInt("##Rows", &rows, 1, 5)) {
-          rows = Clamp(rows, MIN_ROWS, MAX_ROWS);
-          end_pos[0] = rows - 1;
-          printf("Rows Changed. Passing in: %d\n", rows);
-          State_Set_MazeDimensions(state, rows, columns);
-          State_Set_MazeEndpoints(state, start_pos[0], start_pos[1], end_pos[0],
-                                  end_pos[1]);
+        if (ImGui::InputInt("##Rows", &ui->rows, 1, 5)) {
+          ui->rows = Clamp(ui->rows, MIN_ROWS, MAX_ROWS);
+          ui->end_pos[0] = ui->rows - 1;
+          MazeContext_Set_MazeDimensions(ctx);
+          MazeContext_Set_MazeEndpoints(ctx);
         }
 
         ImGui::TableNextRow();
@@ -156,12 +143,11 @@ void Draw_Gui_Frame(State *state, GuiInfo *gi) {
         ImGui::TableSetColumnIndex(1);
         ImGui::SetNextItemWidth(-FLT_MIN);
 
-        if (ImGui::InputInt("##Columns", &columns, 1, 5)) {
-          columns = Clamp(columns, MIN_COLUMNS, MAX_COLUMNS);
-          end_pos[1] = columns - 1;
-          State_Set_MazeDimensions(state, rows, columns);
-          State_Set_MazeEndpoints(state, start_pos[0], start_pos[1], end_pos[0],
-                                  end_pos[1]);
+        if (ImGui::InputInt("##Columns", &ui->columns, 1, 5)) {
+          ui->columns = Clamp(ui->columns, MIN_COLUMNS, MAX_COLUMNS);
+          ui->end_pos[1] = ui->columns - 1;
+          MazeContext_Set_MazeDimensions(ctx);
+          MazeContext_Set_MazeEndpoints(ctx);
         }
 
         ImGui::TableNextRow();
@@ -171,11 +157,10 @@ void Draw_Gui_Frame(State *state, GuiInfo *gi) {
 
         ImGui::TableSetColumnIndex(1);
         ImGui::SetNextItemWidth(-FLT_MIN);
-        if (ImGui::DragInt2("##StartPos", start_pos, 1.0f, 0, 100)) {
-          start_pos[0] = Clamp(start_pos[0], 0, rows - 1);
-          start_pos[1] = Clamp(start_pos[1], 0, columns - 1);
-          State_Set_MazeEndpoints(state, start_pos[0], start_pos[1], end_pos[0],
-                                  end_pos[1]);
+        if (ImGui::DragInt2("##StartPos", ui->start_pos, 1.0f, 0, 100)) {
+          ui->start_pos[0] = Clamp(ui->start_pos[0], 0, ui->rows - 1);
+          ui->start_pos[1] = Clamp(ui->start_pos[1], 0, ui->columns - 1);
+          MazeContext_Set_MazeEndpoints(ctx);
         }
 
         ImGui::TableNextRow();
@@ -185,11 +170,10 @@ void Draw_Gui_Frame(State *state, GuiInfo *gi) {
 
         ImGui::TableSetColumnIndex(1);
         ImGui::SetNextItemWidth(-FLT_MIN);
-        if (ImGui::DragInt2("##EndPos", end_pos, 1.0f, 0, 100)) {
-          end_pos[0] = Clamp(end_pos[0], 0, rows - 1);
-          end_pos[1] = Clamp(end_pos[1], 0, columns - 1);
-          State_Set_MazeEndpoints(state, start_pos[0], start_pos[1], end_pos[0],
-                                  end_pos[1]);
+        if (ImGui::DragInt2("##EndPos", ui->end_pos, 1.0f, 0, 100)) {
+          ui->end_pos[0] = Clamp(ui->end_pos[0], 0, ui->rows - 1);
+          ui->end_pos[1] = Clamp(ui->end_pos[1], 0, ui->columns - 1);
+          MazeContext_Set_MazeEndpoints(ctx);
         }
 
         ImGui::EndTable();
@@ -199,15 +183,14 @@ void Draw_Gui_Frame(State *state, GuiInfo *gi) {
 
       ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 4.0f);
       if (ImGui::Button("Randomize Start & End", ImVec2(-FLT_MIN, 30.0f))) {
-        int max_row = rows;
-        int max_col = columns;
-        start_pos[0] = std::rand() % (max_row);
-        start_pos[1] = std::rand() % (max_col);
-        end_pos[0] = std::rand() % (max_row);
-        end_pos[0] = std::rand() % (max_col);
+        int max_row = ui->rows;
+        int max_col = ui->columns;
+        ui->start_pos[0] = std::rand() % (max_row);
+        ui->start_pos[1] = std::rand() % (max_col);
+        ui->end_pos[0] = std::rand() % (max_row);
+        ui->end_pos[1] = std::rand() % (max_col);
 
-        State_Set_MazeEndpoints(state, start_pos[0], start_pos[1], end_pos[0],
-                                end_pos[1]);
+        MazeContext_Set_MazeEndpoints(ctx);
       }
       ImGui::PopStyleVar();
     }
@@ -230,7 +213,6 @@ void Draw_Gui_Frame(State *state, GuiInfo *gi) {
       ImGui::Separator();
       ImGui::Dummy(ImVec2(0.0f, 5.0f));
 
-      static bool isAnimated = false;
       static float speedVal = 1.0f;
 
       if (ImGui::BeginTable("AnimTable", 2,
@@ -245,17 +227,42 @@ void Draw_Gui_Frame(State *state, GuiInfo *gi) {
         ImGui::Text("Animate");
 
         ImGui::TableSetColumnIndex(1);
-        ImGui::Checkbox("##AnimateSteps", &isAnimated);
+        ImGui::Checkbox("##AnimateSteps", &ui->animate);
 
+        ImGui::SameLine(0.0f, 15.0f);
+        ImGui::BeginDisabled(!(ui->maze_mode == MAZE_SOLVING ||
+                               ui->maze_mode == MAZE_GENERATING));
+        if (ImGui::Button("Skip Animation")) {
+          ui->skipRequest = true;
+        }
+        ImGui::EndDisabled();
+
+        ImGui::BeginDisabled(!ui->animate);
         ImGui::TableNextRow();
         ImGui::TableSetColumnIndex(0);
         ImGui::AlignTextToFramePadding();
         ImGui::Text("Speed");
 
         ImGui::TableSetColumnIndex(1);
-        ImGui::BeginDisabled(!isAnimated);
         ImGui::SetNextItemWidth(-FLT_MIN);
-        ImGui::SliderFloat("##Speed", &speedVal, 0.1f, 5.0f, "%.1fx");
+
+        if (ImGui::SliderFloat("##Speed", &ui->speed, 0.1f, 5.0f, "%.1fx")) {
+
+          // Exponential Decay
+          if (ui->speed <= 1.0f) {
+
+            float t = (ui->speed - 0.1f) / 0.9f; // Linear Mapping from 0 to 1
+
+            ui->time_delay =
+                500.0f * std::pow(0.2f, t); // 0.2 = MaxDelay / Min Delay
+
+          } else {
+
+            float t = (ui->speed - 1.0f) / 4.0f;
+            ui->time_delay = 100.0f * std::pow(0.01f, t); // (1 / 100 = 0.01)
+          }
+        }
+
         ImGui::EndDisabled();
 
         ImGui::EndTable();
@@ -429,17 +436,16 @@ void Draw_Gui_Frame(State *state, GuiInfo *gi) {
   ImGui::End();
 }
 
-void Render_Gui_Frame(GuiInfo *gi) {
+void GUI_Render_Frame(SDL_Renderer *renderer) {
   ImGui::Render();
 
   ImGuiIO &io = ImGui::GetIO();
 
-  ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), gi->renderer);
+  ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), renderer);
 }
 
-void Destroy_Gui(GuiInfo *gi) {
+void GUI_Deinit() {
   ImGui_ImplSDLRenderer3_Shutdown();
   ImGui_ImplSDL3_Shutdown();
   ImGui::DestroyContext();
-  delete gi;
 }

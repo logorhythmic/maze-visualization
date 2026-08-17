@@ -39,13 +39,13 @@ int main() {
   const double frequency_inv = 1.0 / (double)SDL_GetPerformanceFrequency();
   double delta_time_ms = 0.0;
   uint64_t last_start = SDL_GetPerformanceCounter();
-  //
 
-  // Setting up state
-  State *state = State_Create(renderer);
+  // Setting up MazeUIState and MazeContext
+  MazeUIState *maze_ui_state = MazeUIState_Create();
+  MazeContext *maze_context = MazeContext_Create(maze_ui_state, renderer);
 
   // Setting up UI
-  GuiInfo *gi = Create_Gui_Info(window, renderer, &event);
+  GUI_Init(window, renderer);
 
   bool done = false;
   while (!done) {
@@ -53,18 +53,20 @@ int main() {
     delta_time_ms = (current_start - last_start) * frequency_inv * 1000.0;
     last_start = current_start;
     while (SDL_PollEvent(&event)) {
-      Process_Gui_Event(gi);
+
+      GUI_Process_Event(&event);
+
       switch (event.type) {
       case SDL_EVENT_QUIT:
         done = true;
         break;
       case SDL_EVENT_KEY_DOWN:
-        State_Process_Event(state, &event);
+        MazeContext_Process_Event(maze_context, &event);
         break;
       }
     }
 
-    Draw_Gui_Frame(state, gi);
+    GUI_Draw_Frame(maze_ui_state, maze_context);
 
     // Setting the screen scaling
     Set_SDL_Scaling(window, renderer);
@@ -74,15 +76,16 @@ int main() {
     SDL_SetRenderDrawColor(renderer, bg.r, bg.g, bg.b, bg.a);
     SDL_RenderClear(renderer);
 
-    State_Update(state, delta_time_ms);
-    State_Render(state);
+    MazeContext_Update(maze_context, delta_time_ms);
+    MazeContext_Render(renderer, maze_context);
 
-    Render_Gui_Frame(gi);
+    GUI_Render_Frame(renderer);
 
     SDL_RenderPresent(renderer);
   }
+
   SDL_DestroyRenderer(renderer);
-  State_Destroy(state);
+  MazeContext_Destroy(maze_context);
   SDL_DestroyWindow(window);
   SDL_Quit();
   return 0;

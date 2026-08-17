@@ -10,11 +10,11 @@ typedef struct {
   int y;
 } Vector2;
 
-MazeRender *Maze_Render_Create(SDL_Renderer *renderer, Vector2 view_port,
-                               Vector2 view_padding, int wall_thickness,
-                               SDL_Color wall_color, float soln_line_area,
+MazeRender *Maze_Render_Create(Vector2 view_port, Vector2 view_padding,
+                               int wall_thickness, SDL_Color wall_color,
+                               float soln_line_area,
                                SDL_Color generated_bg_color);
 
-void Maze_Render(MazeRender *maze_render, Maze *maze);
+void Maze_Render(SDL_Renderer *r, MazeRender *maze_render, Maze *maze);
 
 void Maze_Render_Destroy(MazeRender *maze_render);

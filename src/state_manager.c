@@ -8,40 +8,42 @@
 #include <SDL3/SDL_events.h>
 #include <SDL3/SDL_render.h>
 #include <SDL3/SDL_stdinc.h>
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-// #define SMALL
-
-#define TIME_DELAY_MS 90
+#define TIME_DELAY_MS 100
 
 #define WALL_THICKNESS 1
 #define SOLN_LINE_THICK 0.45f
 
-typedef enum { MODE_NONE, MODE_GENERATING, MAZE_READY, MODE_SOLVING } MazeMode;
-
-struct State {
+struct MazeContext {
   Maze *maze;
   MazeRender *maze_render;
-
   MazeEvents *current_events;
-
-  bool animate;
-
-  bool maze_is_blank;
+  MazeUIState *maze_ui_state;
 
   double time_elapsed;
-  double time_delay;
-
-  SDL_Renderer *renderer;
-
-  MazeMode maze_mode;
 };
 
-State *State_Create(SDL_Renderer *renderer) {
-  State *state = calloc(1, sizeof(State));
-  // CellPos start_cell = {SDL_rand(ROWS), SDL_rand(COLUMNS)};
-  // CellPos end_cell = {SDL_rand(ROWS), SDL_rand(COLUMNS)};
+MazeUIState *MazeUIState_Create() {
+  MazeUIState *mu = calloc(1, sizeof(MazeUIState));
+  mu->animate = true;
+  mu->skipRequest = false;
+  mu->rows = DEFAULT_ROWS;
+  mu->columns = DEFAULT_COLUMNS;
+  mu->start_pos[0] = 0;
+  mu->start_pos[1] = 0;
+  mu->end_pos[0] = DEFAULT_COLUMNS - 1;
+  mu->end_pos[1] = DEFAULT_ROWS - 1;
+  mu->speed = DEFAULT_SPEED;
+  mu->time_delay = TIME_DELAY_MS;
+  return mu;
+}
+
+MazeContext *MazeContext_Create(MazeUIState *mu, SDL_Renderer *renderer) {
+  MazeContext *state = calloc(1, sizeof(MazeContext));
+  state->maze_ui_state = mu;
 
   CellPos start_cell = {0, 0};
   CellPos end_cell = {DEFAULT_ROWS - 1, DEFAULT_COLUMNS - 1};
@@ -56,28 +58,45 @@ State *State_Create(SDL_Renderer *renderer) {
 
   Vector2 view_dimensions = {w - GUI_WIDTH, h};
   Vector2 view_padding = {20, 20};
-  state->maze_render = Maze_Render_Create(
-      renderer, view_dimensions, view_padding, WALL_THICKNESS, COL_WALL,
-      SOLN_LINE_THICK, COL_STATE_GENERATED);
-  state->maze_mode = MODE_NONE;
-  state->time_delay = TIME_DELAY_MS;
+  state->maze_render =
+      Maze_Render_Create(view_dimensions, view_padding, WALL_THICKNESS,
+                         COL_WALL, SOLN_LINE_THICK, COL_STATE_GENERATED);
   state->current_events = NULL;
+
+  double time_elapsed = 0;
 
   return state;
 }
 
-void State_Set_MazeDimensions(State *state, int row, int columns) {
-  Maze_Set_Dimensions(state->maze, row, columns);
+void MazeContext_Set_MazeDimensions(MazeContext *ctx) {
+  ctx->maze_ui_state->maze_mode = MAZE_BLANK;
+  Maze_Set_Dimensions(ctx->maze, ctx->maze_ui_state->rows,
+                      ctx->maze_ui_state->columns);
 }
 
-void State_Set_MazeEndpoints(State *state, int start_x, int start_y, int end_x,
-                             int end_y) {
-  CellPos start = {start_x, start_y};
-  CellPos end = {end_x, end_y};
-  Maze_Set_Endpoints(state->maze, start, end);
+void MazeContext_Set_MazeEndpoints(MazeContext *ctx) {
+  CellPos start = {ctx->maze_ui_state->start_pos[0],
+                   ctx->maze_ui_state->start_pos[1]};
+  CellPos end = {ctx->maze_ui_state->end_pos[0],
+                 ctx->maze_ui_state->end_pos[1]};
+
+  Maze_Set_Endpoints(ctx->maze, start, end);
+
+  if (ctx->maze_ui_state->maze_mode == MAZE_SOLVED) {
+    Maze_SetAll_CellState(ctx->maze, STATE_GENERATED);
+    ctx->maze_ui_state->maze_mode = MAZE_GENERATED;
+    return;
+  }
+
+  if (ctx->maze_ui_state->maze_mode != MAZE_GENERATED) {
+    printf("Maze not generated. Current Maze Mode: %d\n",
+           ctx->maze_ui_state->maze_mode);
+    Maze_Reset(ctx->maze);
+    ctx->maze_ui_state->maze_mode = MAZE_BLANK;
+  }
 }
 
-void Event_DFSGen(State *state) {
+void Event_DFSGen(MazeContext *state) {
   MazeEvents *DFSGen_events = DFSGen_Generate_MazeEvents(state->maze);
 
   // Destroy previous events if exist (To prevent memory leaks)
@@ -89,20 +108,22 @@ void Event_DFSGen(State *state) {
   state->current_events = DFSGen_events;
 
   // Set MazeMode to generation
-  state->maze_mode = MODE_GENERATING;
+  state->maze_ui_state->maze_mode = MAZE_GENERATING;
 
   // Need to always reset maze to clear previous generation or solving (if any)
   Maze_Reset(state->maze);
 
   // If not being animated, display final Maze
-  if (!state->animate) {
+  if (!state->maze_ui_state->animate) {
     MazeEvents_StepAll(state->current_events, state->maze);
     Maze_SetAll_CellState(state->maze, STATE_GENERATED);
-    state->maze_mode = MAZE_READY;
+    state->maze_ui_state->maze_mode = MAZE_GENERATED;
+    printf("Setting maze as genenrated");
   }
+  printf("Maze Mode: %d\n", state->maze_ui_state->maze_mode);
 }
 
-void Event_PrimsGen(State *state) {
+void Event_PrimsGen(MazeContext *state) {
   MazeEvents *PrimsGen_events = PrimsGen_Generate_MazeEvents(state->maze);
 
   // Destroy previous events if exist (To prevent memory leaks)
@@ -114,21 +135,23 @@ void Event_PrimsGen(State *state) {
   state->current_events = PrimsGen_events;
 
   // Set MazeMode to generation
-  state->maze_mode = MODE_GENERATING;
+  state->maze_ui_state->maze_mode = MAZE_GENERATING;
 
   // Need to always reset maze to clear previous generation or solving (if any)
   Maze_Reset(state->maze);
 
   // If not being animated, display final Maze
-  if (!state->animate) {
+  if (!state->maze_ui_state->animate) {
     MazeEvents_StepAll(state->current_events, state->maze);
     Maze_SetAll_CellState(state->maze, STATE_GENERATED);
-    state->maze_mode = MAZE_READY;
+    state->maze_ui_state->maze_mode = MAZE_GENERATED;
   }
 }
 
-void Event_DFSSolve(State *state) {
-  if (state->maze_mode != MAZE_READY) {
+void Event_DFSSolve(MazeContext *state) {
+  printf("Maze Mode is: %d\n", state->maze_ui_state->maze_mode);
+  if (state->maze_ui_state->maze_mode != MAZE_GENERATED &&
+      state->maze_ui_state->maze_mode != MAZE_SOLVED) {
     printf("Maze has not been generated. Generate the maze first\n");
     return;
   }
@@ -147,18 +170,19 @@ void Event_DFSSolve(State *state) {
   state->current_events = DFSSolve_Events;
 
   // Set MazeMode to solving
-  state->maze_mode = MODE_SOLVING;
+  state->maze_ui_state->maze_mode = MAZE_SOLVING;
 
   // If not being animated, display the final solution
-  if (!state->animate) {
+  if (!state->maze_ui_state->animate) {
     MazeEvents_StepAll(state->current_events, state->maze);
-    state->maze_mode = MAZE_READY;
+    state->maze_ui_state->maze_mode = MAZE_SOLVED;
   }
 }
 
-void Event_BFSSolve(State *state) {
+void Event_BFSSolve(MazeContext *state) {
 
-  if (state->maze_mode != MAZE_READY) {
+  if (state->maze_ui_state->maze_mode != MAZE_GENERATED &&
+      state->maze_ui_state->maze_mode != MAZE_SOLVED) {
     printf("Maze has not been generated. Generate the maze first\n");
     return;
   }
@@ -177,23 +201,24 @@ void Event_BFSSolve(State *state) {
   state->current_events = BFSSolve_Events;
 
   // Set MazeMode to solving
-  state->maze_mode = MODE_SOLVING;
+  state->maze_ui_state->maze_mode = MAZE_SOLVING;
 
   // If not being animated, display the final solution
-  if (!state->animate) {
+  if (!state->maze_ui_state->animate) {
     MazeEvents_StepAll(state->current_events, state->maze);
-    state->maze_mode = MAZE_READY;
+    state->maze_ui_state->maze_mode = MAZE_SOLVED;
   }
 }
 
-void State_Process_Event(State *state, const SDL_Event *event) {
+void MazeContext_Process_Event(MazeContext *state, const SDL_Event *event) {
 
   //------------------------------ Key Pressess-------------------------------
   switch (event->key.key) {
 
   case SDLK_A: // Animation Toggle
-    state->animate = !state->animate;
-    printf("Animation is turned %s\n", state->animate ? "on" : "off");
+    state->maze_ui_state->animate = !state->maze_ui_state->animate;
+    printf("Animation is turned %s\n",
+           state->maze_ui_state->animate ? "on" : "off");
     break;
 
   case SDLK_D: // Init DFS Generation
@@ -217,43 +242,58 @@ void State_Process_Event(State *state, const SDL_Event *event) {
   //
 }
 
-void State_Update(State *state, uint64_t delta_time_ms) {
+void MazeContext_Update(MazeContext *ctx, uint64_t delta_time_ms) {
 
-  if (state->maze_mode == MAZE_READY || state->maze_mode == MODE_NONE) {
+  assert(ctx != NULL);
+  assert(ctx->maze_ui_state != NULL);
+
+  if (ctx->maze_ui_state->maze_mode == MAZE_GENERATED ||
+      ctx->maze_ui_state->maze_mode == MAZE_BLANK) {
     return;
   }
 
-  if (state->animate) {
-    if (state->maze_mode == MODE_GENERATING ||
-        state->maze_mode == MODE_SOLVING) {
-      state->time_elapsed += delta_time_ms;
+  if (ctx->maze_ui_state->animate) {
+    if (ctx->maze_ui_state->maze_mode == MAZE_GENERATING ||
+        ctx->maze_ui_state->maze_mode == MAZE_SOLVING) {
+      ctx->time_elapsed += delta_time_ms;
 
-      while (state->time_elapsed >= state->time_delay) {
-        state->time_elapsed -= state->time_delay;
+      while (ctx->time_elapsed >= ctx->maze_ui_state->time_delay) {
+        ctx->time_elapsed -= ctx->maze_ui_state->time_delay;
 
-        if (!MazeEvents_Step(state->current_events, state->maze)) {
+        if (!MazeEvents_Step(ctx->current_events, ctx->maze)) {
           printf("Animation finished\n");
-          state->maze_mode = MAZE_READY;
+          if (ctx->maze_ui_state->maze_mode == MAZE_GENERATING) {
+            ctx->maze_ui_state->maze_mode = MAZE_GENERATED;
+          } else {
+            ctx->maze_ui_state->maze_mode = MAZE_SOLVED;
+          }
           break;
         }
       }
     }
-  } else {
-    if (state->maze_mode == MODE_GENERATING ||
-        state->maze_mode == MODE_SOLVING) {
-      MazeEvents_StepAll(state->current_events, state->maze);
+  }
+
+  if (ctx->maze_ui_state->skipRequest) {
+    if (ctx->maze_ui_state->maze_mode == MAZE_GENERATING ||
+        ctx->maze_ui_state->maze_mode == MAZE_SOLVING) {
+      MazeEvents_StepAll(ctx->current_events, ctx->maze);
       printf("Animation turned off, stepped through all events\n");
-      state->maze_mode = MAZE_READY;
+      ctx->maze_ui_state->maze_mode = MAZE_GENERATED;
+      if (ctx->maze_ui_state->maze_mode == MAZE_SOLVING) {
+        ctx->maze_ui_state->maze_mode = MAZE_SOLVED;
+      }
     }
+    ctx->maze_ui_state->skipRequest = false;
   }
 }
 
-void State_Render(State *state) {
+void MazeContext_Render(SDL_Renderer *r, MazeContext *state) {
 
-  Maze_Render(state->maze_render, state->maze);
+  Maze_Render(r, state->maze_render, state->maze);
 }
 
-void State_Destroy(State *state) {
+void MazeContext_Destroy(MazeContext *state) {
+  free(state->maze_ui_state);
   Maze_Render_Destroy(state->maze_render);
   MazeEvents_Destroy(state->current_events);
   Maze_Destroy(state->maze);

@@ -3,8 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MAX_MAZE_ROW 900
-#define MAX_MAZE_COL 900
+#define MAX_MAZE_ROW 150
+#define MAX_MAZE_COL 150
 #define MAX_MAZE_SIZE MAX_MAZE_ROW *MAX_MAZE_COL
 
 static inline int get_cell_index(CellPos cp, Maze *maze) {
