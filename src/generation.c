@@ -1,4 +1,6 @@
 #include "generation.h"
+#include "maze.h"
+#include "maze_events.h"
 #include <SDL3/SDL_stdinc.h>
 #include <assert.h>
 #include <stdio.h>
@@ -102,8 +104,8 @@ MazeEvents *DFSGen_Generate_MazeEvents(Maze *maze) {
       }
     }
   }
-
-  Maze_SetAll_CellState(maze, STATE_GENERATED);
+  MazeEvents_Add_StateChange(events, maze->start_cell,
+                             UNSET_STATE(STATE_FRONTIER));
 
   printf("DFS SOLVE EVENTS GENERATED\n");
   free(current_path);

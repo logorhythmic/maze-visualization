@@ -61,7 +61,6 @@ int main() {
         done = true;
         break;
       case SDL_EVENT_KEY_DOWN:
-        MazeContext_Process_Event(maze_context, &event);
         break;
       }
     }

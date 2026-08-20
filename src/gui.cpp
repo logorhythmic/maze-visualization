@@ -131,8 +131,8 @@ void GUI_Draw_Frame(MazeUIState *ui, MazeContext *ctx) {
         if (ImGui::InputInt("##Rows", &ui->rows, 1, 5)) {
           ui->rows = Clamp(ui->rows, MIN_ROWS, MAX_ROWS);
           ui->end_pos[0] = ui->rows - 1;
-          MazeContext_Set_MazeDimensions(ctx);
-          MazeContext_Set_MazeEndpoints(ctx);
+          MazeContext_Event_SetMazeDimensions(ctx);
+          MazeContext_Event_SetMazeEndpoints(ctx);
         }
 
         ImGui::TableNextRow();
@@ -146,8 +146,8 @@ void GUI_Draw_Frame(MazeUIState *ui, MazeContext *ctx) {
         if (ImGui::InputInt("##Columns", &ui->columns, 1, 5)) {
           ui->columns = Clamp(ui->columns, MIN_COLUMNS, MAX_COLUMNS);
           ui->end_pos[1] = ui->columns - 1;
-          MazeContext_Set_MazeDimensions(ctx);
-          MazeContext_Set_MazeEndpoints(ctx);
+          MazeContext_Event_SetMazeDimensions(ctx);
+          MazeContext_Event_SetMazeEndpoints(ctx);
         }
 
         ImGui::TableNextRow();
@@ -160,7 +160,7 @@ void GUI_Draw_Frame(MazeUIState *ui, MazeContext *ctx) {
         if (ImGui::DragInt2("##StartPos", ui->start_pos, 1.0f, 0, 100)) {
           ui->start_pos[0] = Clamp(ui->start_pos[0], 0, ui->rows - 1);
           ui->start_pos[1] = Clamp(ui->start_pos[1], 0, ui->columns - 1);
-          MazeContext_Set_MazeEndpoints(ctx);
+          MazeContext_Event_SetMazeEndpoints(ctx);
         }
 
         ImGui::TableNextRow();
@@ -173,7 +173,7 @@ void GUI_Draw_Frame(MazeUIState *ui, MazeContext *ctx) {
         if (ImGui::DragInt2("##EndPos", ui->end_pos, 1.0f, 0, 100)) {
           ui->end_pos[0] = Clamp(ui->end_pos[0], 0, ui->rows - 1);
           ui->end_pos[1] = Clamp(ui->end_pos[1], 0, ui->columns - 1);
-          MazeContext_Set_MazeEndpoints(ctx);
+          MazeContext_Event_SetMazeEndpoints(ctx);
         }
 
         ImGui::EndTable();
@@ -190,7 +190,7 @@ void GUI_Draw_Frame(MazeUIState *ui, MazeContext *ctx) {
         ui->end_pos[0] = std::rand() % (max_row);
         ui->end_pos[1] = std::rand() % (max_col);
 
-        MazeContext_Set_MazeEndpoints(ctx);
+        MazeContext_Event_SetMazeEndpoints(ctx);
       }
       ImGui::PopStyleVar();
     }
@@ -233,7 +233,7 @@ void GUI_Draw_Frame(MazeUIState *ui, MazeContext *ctx) {
         ImGui::BeginDisabled(!(ui->maze_mode == MAZE_SOLVING ||
                                ui->maze_mode == MAZE_GENERATING));
         if (ImGui::Button("Skip Animation")) {
-          ui->skipRequest = true;
+          MazeContext_Event_SkipAnimation(ctx);
         }
         ImGui::EndDisabled();
 
@@ -287,21 +287,12 @@ void GUI_Draw_Frame(MazeUIState *ui, MazeContext *ctx) {
       ImGui::Separator();
       ImGui::Dummy(ImVec2(0.0f, 5.0f));
 
-      const char *genAlgorithms[] = {"Randomized DFS", "Randomized Prim's",
-                                     "Kruskal's Algorithm"};
-      static int currentGenAlgo = 0;
-
       ImGui::SetNextItemWidth(-FLT_MIN);
-      if (ImGui::BeginCombo("##GenAlgorithm", genAlgorithms[currentGenAlgo])) {
-        for (int i = 0; i < IM_ARRAYSIZE(genAlgorithms); i++) {
-          const bool isSelected = (currentGenAlgo == i);
-          if (ImGui::Selectable(genAlgorithms[i], isSelected)) {
-            currentGenAlgo = i;
-          }
-          if (isSelected)
-            ImGui::SetItemDefaultFocus();
-        }
-        ImGui::EndCombo();
+
+      int gen_algo = ui->gen_algo;
+      if (ImGui::Combo("##GenAlgorithm", &gen_algo, ui->gen_algo_names,
+                       IM_ARRAYSIZE(ui->gen_algo_names))) {
+        ui->gen_algo = static_cast<GenAlgo>(gen_algo);
       }
 
       ImGui::Dummy(ImVec2(0.0f, 5.0f));
@@ -313,6 +304,7 @@ void GUI_Draw_Frame(MazeUIState *ui, MazeContext *ctx) {
 
       if (ImGui::Button("Generate Maze", btnSize)) {
         // Trigger maze generation
+        MazeContext_Event_GenerateMaze(ctx);
       }
 
       ImGui::SameLine();
@@ -324,7 +316,7 @@ void GUI_Draw_Frame(MazeUIState *ui, MazeContext *ctx) {
       ImGui::PushStyleColor(ImGuiCol_ButtonActive,
                             (ImVec4)ImColor::HSV(0.0f, 0.8f, 0.8f));
       if (ImGui::Button("Reset", btnSize)) {
-        // Reset logic
+        MazeContext_Event_ResetMaze(ctx);
       }
       ImGui::PopStyleColor(3);
     }
@@ -336,6 +328,8 @@ void GUI_Draw_Frame(MazeUIState *ui, MazeContext *ctx) {
 
   //===============SECTION 4: Maze Solving================
   {
+    ImGui::BeginDisabled(ui->maze_mode == MAZE_BLANK ||
+                         ui->maze_mode == MAZE_GENERATING);
     if (ImGui::BeginChild("SolveSection", ImVec2(0.0f, 0.0f),
                           ImGuiChildFlags_Borders |
                               ImGuiChildFlags_AutoResizeY)) {
@@ -351,17 +345,11 @@ void GUI_Draw_Frame(MazeUIState *ui, MazeContext *ctx) {
       static int currentSolveAlgo = 0;
 
       ImGui::SetNextItemWidth(-FLT_MIN);
-      if (ImGui::BeginCombo("##SolveAlgorithm",
-                            solveAlgorithms[currentSolveAlgo])) {
-        for (int i = 0; i < IM_ARRAYSIZE(solveAlgorithms); i++) {
-          const bool isSelected = (currentSolveAlgo == i);
-          if (ImGui::Selectable(solveAlgorithms[i], isSelected)) {
-            currentSolveAlgo = i;
-          }
-          if (isSelected)
-            ImGui::SetItemDefaultFocus();
-        }
-        ImGui::EndCombo();
+
+      int solve_algo = ui->solve_algo;
+      if (ImGui::Combo("##SolveAlgorithm", &solve_algo, ui->solve_algo_names,
+                       IM_ARRAYSIZE(ui->solve_algo_names))) {
+        ui->solve_algo = static_cast<SolveAlgo>(solve_algo);
       }
 
       ImGui::Dummy(ImVec2(0.0f, 5.0f));
@@ -383,7 +371,7 @@ void GUI_Draw_Frame(MazeUIState *ui, MazeContext *ctx) {
                             (ImVec4)ImColor::HSV(0.38f, 0.70f, 0.65f));
 
       if (ImGui::Button("Solve Maze", btnSize)) {
-        // Trigger solve logic
+        MazeContext_Event_SolveMaze(ctx);
       }
       ImGui::PopStyleColor(3);
 
@@ -395,12 +383,18 @@ void GUI_Draw_Frame(MazeUIState *ui, MazeContext *ctx) {
                             (ImVec4)ImColor::HSV(0.08f, 0.75f, 0.60f));
       ImGui::PushStyleColor(ImGuiCol_ButtonActive,
                             (ImVec4)ImColor::HSV(0.08f, 0.85f, 0.70f));
+
+      ImGui::BeginDisabled(ui->maze_mode != MAZE_SOLVED);
       if (ImGui::Button("Clear Soln", btnSize)) {
         // Clear logic
+        MazeContext_Event_ClearSolution(ctx);
       }
+
       ImGui::PopStyleColor(3);
+      ImGui::EndDisabled();
     }
     ImGui::EndChild();
+    ImGui::EndDisabled();
   }
   //=============================================================
 

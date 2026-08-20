@@ -26,15 +26,36 @@ typedef enum {
   MAZE_SOLVED
 } MazeMode;
 
+typedef enum {
+  GEN_DFS,
+  GEN_PRIMS,
+  GEN_KRUSKAL,
+  TOTAL_GEN_ALGO,
+} GenAlgo;
+
+typedef enum {
+  SOLVE_DFS,
+  SOLVE_BFS,
+  SOLVE_ASTAR,
+  TOTAL_SOLVE_ALGO,
+} SolveAlgo;
+
 typedef struct {
   int rows;
   int columns;
   int start_pos[2];
   int end_pos[2];
 
+  GenAlgo gen_algo;
+  const char *gen_algo_names[TOTAL_GEN_ALGO];
+
+  SolveAlgo solve_algo;
+  const char *solve_algo_names[TOTAL_SOLVE_ALGO];
+
   bool animate;
   bool skipRequest;
   MazeMode maze_mode;
+
   float speed;
   float time_delay;
 } MazeUIState;
@@ -45,11 +66,19 @@ MazeUIState *MazeUIState_Create();
 
 MazeContext *MazeContext_Create(MazeUIState *ui, SDL_Renderer *r);
 
-void MazeContext_Process_Event(MazeContext *ctx, const SDL_Event *event);
+void MazeContext_Event_SetMazeEndpoints(MazeContext *ctx);
 
-void MazeContext_Set_MazeDimensions(MazeContext *ctx);
+void MazeContext_Event_SetMazeDimensions(MazeContext *ctx);
 
-void MazeContext_Set_MazeEndpoints(MazeContext *ctx);
+void MazeContext_Event_ResetMaze(MazeContext *ctx);
+
+void MazeContext_Event_ClearSolution(MazeContext *ctx);
+
+void MazeContext_Event_SkipAnimation(MazeContext *ctx);
+
+void MazeContext_Event_GenerateMaze(MazeContext *ctx);
+
+void MazeContext_Event_SolveMaze(MazeContext *ctx);
 
 void MazeContext_Render(SDL_Renderer *r, MazeContext *ctx);
 
