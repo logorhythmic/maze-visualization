@@ -53,7 +53,7 @@ typedef struct {
   const char *solve_algo_names[TOTAL_SOLVE_ALGO];
 
   bool animate;
-  bool skipRequest;
+  bool dark_mode;
   MazeMode maze_mode;
 
   float speed;
@@ -78,7 +78,11 @@ void MazeContext_Event_SkipAnimation(MazeContext *ctx);
 
 void MazeContext_Event_GenerateMaze(MazeContext *ctx);
 
+void MazeContext_Event_ChangeTheme(MazeContext *ctx);
+
 void MazeContext_Event_SolveMaze(MazeContext *ctx);
+
+SDL_Color MazeContext_Get_BackgroundColor(MazeContext *ctx);
 
 void MazeContext_Render(SDL_Renderer *r, MazeContext *ctx);
 

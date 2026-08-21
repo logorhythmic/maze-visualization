@@ -9,9 +9,34 @@
 #include <cmath>
 #include <cstdlib>
 #include <ctime>
-#include <stdio.h>
 
 #define Clamp(x, a, b) (((x) < (a)) ? (a) : (((x) > (b)) ? (b) : (x)))
+
+void Push_ButtonStyle_Color(float hue, bool isDark) {
+  if (!isDark) {
+    ImGui::PushStyleColor(ImGuiCol_Button,
+                          (ImVec4)ImColor::HSV(hue, 0.70f, 0.75f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered,
+                          (ImVec4)ImColor::HSV(hue, 0.80f, 0.65f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive,
+                          (ImVec4)ImColor::HSV(hue, 0.90f, 0.55f));
+  } else {
+    ImGui::PushStyleColor(ImGuiCol_Button,
+                          (ImVec4)ImColor::HSV(hue, 0.56f, 0.45f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered,
+                          (ImVec4)ImColor::HSV(hue, 0.65f, 0.55f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive,
+                          (ImVec4)ImColor::HSV(hue, 0.70f, 0.65f));
+  }
+}
+
+void Push_HeadingStyle_Color(bool isDark) {
+  if (isDark) {
+    ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(100, 150, 200, 255));
+  } else {
+    ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(45, 95, 150, 255));
+  }
+}
 
 void GUI_Init(SDL_Window *window, SDL_Renderer *renderer) {
 
@@ -108,7 +133,7 @@ void GUI_Draw_Frame(MazeUIState *ui, MazeContext *ctx) {
     if (ImGui::BeginChild("ConfigSection", ImVec2(0.0f, 0.0f),
                           ImGuiChildFlags_Borders |
                               ImGuiChildFlags_AutoResizeY)) {
-      ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(100, 150, 200, 255));
+      Push_HeadingStyle_Color(ui->dark_mode);
       ImGui::Text("CONFIGURATION");
       ImGui::PopStyleColor();
       ImGui::Separator();
@@ -200,14 +225,13 @@ void GUI_Draw_Frame(MazeUIState *ui, MazeContext *ctx) {
   //===========================================================
 
   ImGui::Dummy(ImVec2(0.0f, 10.0f)); // Gap between boxes
-
   //===============SECTION 2: Animation Settings================
   {
     if (ImGui::BeginChild("AnimSection", ImVec2(0.0f, 0.0f),
                           ImGuiChildFlags_Borders |
                               ImGuiChildFlags_AutoResizeY)) {
 
-      ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(100, 150, 200, 255));
+      Push_HeadingStyle_Color(ui->dark_mode);
       ImGui::Text("ANIMATION");
       ImGui::PopStyleColor();
       ImGui::Separator();
@@ -280,7 +304,7 @@ void GUI_Draw_Frame(MazeUIState *ui, MazeContext *ctx) {
                           ImGuiChildFlags_Borders |
                               ImGuiChildFlags_AutoResizeY)) {
 
-      ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(100, 150, 200, 255));
+      Push_HeadingStyle_Color(ui->dark_mode);
       ImGui::Text("GENERATION");
       ImGui::PopStyleColor();
 
@@ -309,12 +333,7 @@ void GUI_Draw_Frame(MazeUIState *ui, MazeContext *ctx) {
 
       ImGui::SameLine();
 
-      ImGui::PushStyleColor(ImGuiCol_Button,
-                            (ImVec4)ImColor::HSV(0.0f, 0.6f, 0.6f));
-      ImGui::PushStyleColor(ImGuiCol_ButtonHovered,
-                            (ImVec4)ImColor::HSV(0.0f, 0.7f, 0.7f));
-      ImGui::PushStyleColor(ImGuiCol_ButtonActive,
-                            (ImVec4)ImColor::HSV(0.0f, 0.8f, 0.8f));
+      Push_ButtonStyle_Color(0.0f, ui->dark_mode);
       if (ImGui::Button("Reset", btnSize)) {
         MazeContext_Event_ResetMaze(ctx);
       }
@@ -334,7 +353,7 @@ void GUI_Draw_Frame(MazeUIState *ui, MazeContext *ctx) {
                           ImGuiChildFlags_Borders |
                               ImGuiChildFlags_AutoResizeY)) {
 
-      ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(100, 150, 200, 255));
+      Push_HeadingStyle_Color(ui->dark_mode);
       ImGui::Text("SOLVING");
       ImGui::PopStyleColor();
       ImGui::Separator();
@@ -361,14 +380,7 @@ void GUI_Draw_Frame(MazeUIState *ui, MazeContext *ctx) {
 
       bool isLightMode = ImGui::GetStyle().Colors[ImGuiCol_WindowBg].x > 0.5f;
 
-      ImGui::PushStyleColor(ImGuiCol_Button,
-                            (ImVec4)ImColor::HSV(0.38f, 0.56f, 0.45f));
-
-      ImGui::PushStyleColor(ImGuiCol_ButtonHovered,
-                            (ImVec4)ImColor::HSV(0.38f, 0.65f, 0.55f));
-
-      ImGui::PushStyleColor(ImGuiCol_ButtonActive,
-                            (ImVec4)ImColor::HSV(0.38f, 0.70f, 0.65f));
+      Push_ButtonStyle_Color(0.38, ui->dark_mode);
 
       if (ImGui::Button("Solve Maze", btnSize)) {
         MazeContext_Event_SolveMaze(ctx);
@@ -377,20 +389,15 @@ void GUI_Draw_Frame(MazeUIState *ui, MazeContext *ctx) {
 
       ImGui::SameLine();
 
-      ImGui::PushStyleColor(ImGuiCol_Button,
-                            (ImVec4)ImColor::HSV(0.08f, 0.65f, 0.50f));
-      ImGui::PushStyleColor(ImGuiCol_ButtonHovered,
-                            (ImVec4)ImColor::HSV(0.08f, 0.75f, 0.60f));
-      ImGui::PushStyleColor(ImGuiCol_ButtonActive,
-                            (ImVec4)ImColor::HSV(0.08f, 0.85f, 0.70f));
-
       ImGui::BeginDisabled(ui->maze_mode != MAZE_SOLVED);
+
+      Push_ButtonStyle_Color(0.08f, ui->dark_mode);
       if (ImGui::Button("Clear Soln", btnSize)) {
         // Clear logic
         MazeContext_Event_ClearSolution(ctx);
       }
-
       ImGui::PopStyleColor(3);
+
       ImGui::EndDisabled();
     }
     ImGui::EndChild();
@@ -402,11 +409,10 @@ void GUI_Draw_Frame(MazeUIState *ui, MazeContext *ctx) {
 
   //===============SECTION 5: Light Mode Dark Mode================
   {
-    bool static isDark = true;
 
     ImGui::SetWindowFontScale(0.89f);
     const char *text =
-        isDark ? "Switch to Light Theme" : "Switch to Dark Theme";
+        ui->dark_mode ? "Switch to Light Theme" : "Switch to Dark Theme";
     float windowWidth = ImGui::GetWindowSize().x;
     float textWidth = ImGui::CalcTextSize(text).x;
     ImVec2 framePadding = ImGui::GetStyle().FramePadding;
@@ -417,8 +423,18 @@ void GUI_Draw_Frame(MazeUIState *ui, MazeContext *ctx) {
     ImGui::SetCursorPosX((windowWidth - buttonWidth) * 0.5f);
 
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 4.0f);
+
     if (ImGui::Button(text, ImVec2(buttonWidth, 0.0f))) {
-      isDark = !isDark;
+      // Theme Change Logic
+      ui->dark_mode = !ui->dark_mode;
+      MazeContext_Event_ChangeTheme(ctx);
+
+      if (ui->dark_mode) {
+        ImGui::StyleColorsDark();
+
+      } else {
+        ImGui::StyleColorsLight();
+      }
     }
     ImGui::PopStyleVar();
   }

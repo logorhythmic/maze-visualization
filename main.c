@@ -71,7 +71,7 @@ int main() {
     Set_SDL_Scaling(window, renderer);
 
     // Clearing Screen
-    SDL_Color bg = COLOR_RENDER_BACKGROUND;
+    SDL_Color bg = MazeContext_Get_BackgroundColor(maze_context);
     SDL_SetRenderDrawColor(renderer, bg.r, bg.g, bg.b, bg.a);
     SDL_RenderClear(renderer);
 

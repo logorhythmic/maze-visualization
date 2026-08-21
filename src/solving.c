@@ -1,4 +1,5 @@
 #include "solving.h"
+#include "maze.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -196,8 +197,9 @@ MazeEvents *BFSSolve_Generate_MazeEvents(Maze *maze) {
       // MazeEvents_End_Batch(events);
       MazeEvents_Add_StateChange(events, current_pos, STATE_SOLVE_EXPLORED);
 
-      // Unset all lead heads
-      MazeEvents_Add_StateChangeAll(events, UNSET_STATE(STATE_FRONTIER));
+      // MazeEvents_Add_StateChangeAll(events, UNSET_STATE(STATE_FRONTIER));
+
+      // Unset all Frontier Cells
 
       int path_length;
       CellPos *final_path = obtain_final_path(came_from, &path_length, maze);
@@ -209,6 +211,8 @@ MazeEvents *BFSSolve_Generate_MazeEvents(Maze *maze) {
             "Maze failed to expand events. Can not visualize the final path\n");
         return NULL;
       }
+
+      MazeEvents_Add_StateChangeAll(events, UNSET_STATE(STATE_FRONTIER));
 
       for (int i = 0; i < path_length; i++) {
         MazeEvents_Add_StateChange(events, final_path[i], STATE_SOLUTION);

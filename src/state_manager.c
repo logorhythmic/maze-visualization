@@ -14,7 +14,7 @@
 
 #define TIME_DELAY_MS 100
 
-#define WALL_THICKNESS 1
+#define WALL_THICKNESS 2
 #define SOLN_LINE_THICK 0.45f
 
 struct MazeContext {
@@ -31,7 +31,6 @@ MazeUIState *MazeUIState_Create() {
   *mu = (MazeUIState){
 
       .animate = true,
-      .skipRequest = false,
 
       .rows = DEFAULT_ROWS,
       .columns = DEFAULT_COLUMNS,
@@ -43,6 +42,7 @@ MazeUIState *MazeUIState_Create() {
       .end_pos[1] = DEFAULT_ROWS - 1,
 
       .speed = DEFAULT_SPEED,
+      .dark_mode = true,
       .time_delay = TIME_DELAY_MS,
 
       .gen_algo = 0,
@@ -74,9 +74,8 @@ MazeContext *MazeContext_Create(MazeUIState *mu, SDL_Renderer *renderer) {
 
   Vector2 view_dimensions = {w - GUI_WIDTH, h};
   Vector2 view_padding = {20, 20};
-  state->maze_render =
-      Maze_Render_Create(view_dimensions, view_padding, WALL_THICKNESS,
-                         COL_WALL, SOLN_LINE_THICK, COL_STATE_GENERATED);
+  state->maze_render = Maze_Render_Create(view_dimensions, view_padding,
+                                          WALL_THICKNESS, SOLN_LINE_THICK);
   state->current_events = NULL;
 
   double time_elapsed = 0;
@@ -88,6 +87,24 @@ void MazeContext_Event_SetMazeDimensions(MazeContext *ctx) {
   ctx->maze_ui_state->maze_mode = MAZE_BLANK;
   Maze_Set_Dimensions(ctx->maze, ctx->maze_ui_state->rows,
                       ctx->maze_ui_state->columns);
+  if (ctx->maze_ui_state->rows > 50 || ctx->maze_ui_state->columns > 50) {
+    Maze_Render_Change_WallThickness(ctx->maze_render, 1.0f);
+  }
+  if (ctx->maze_ui_state->rows < 50 && ctx->maze_ui_state->columns < 50) {
+    Maze_Render_Change_WallThickness(ctx->maze_render, 2.0f);
+  }
+}
+
+void MazeContext_Event_ChangeTheme(MazeContext *ctx) {
+  if (ctx->maze_ui_state->dark_mode) {
+    Maze_Render_ChangeTheme(ctx->maze_render, true);
+  } else {
+    Maze_Render_ChangeTheme(ctx->maze_render, false);
+  }
+}
+
+SDL_Color MazeContext_Get_BackgroundColor(MazeContext *ctx) {
+  return Maze_Render_GetBGColor(ctx->maze_render);
 }
 
 void MazeContext_Event_SetMazeEndpoints(MazeContext *ctx) {
@@ -128,9 +145,11 @@ void MazeContext_Event_SkipAnimation(MazeContext *ctx) {
       ctx->maze_ui_state->maze_mode == MAZE_SOLVING) {
     MazeEvents_StepAll(ctx->current_events, ctx->maze);
     printf("Animation turned off, stepped through all events\n");
-    ctx->maze_ui_state->maze_mode = MAZE_GENERATED;
+
     if (ctx->maze_ui_state->maze_mode == MAZE_SOLVING) {
       ctx->maze_ui_state->maze_mode = MAZE_SOLVED;
+    } else {
+      ctx->maze_ui_state->maze_mode = MAZE_GENERATED;
     }
   }
 }

@@ -5,20 +5,7 @@
 #include <SDL3/SDL_render.h>
 #include <assert.h>
 #include <stdint.h>
-#include <stdio.h>
 #include <stdlib.h>
-
-struct MazeRender {
-  SDL_Color generated_bg_color;
-  SDL_Color wall_color;
-
-  int cell_size;
-  float soln_line_area;
-  int wall_thickness;
-
-  Vector2 view_dimensions;
-  Vector2 view_padding;
-};
 
 typedef union {
   struct {
@@ -57,19 +44,48 @@ static void DrawLineThick(SDL_Renderer *r, Line line, SDL_Color col,
   }
 }
 
+struct MazeRender {
+  SDL_Color generated_bg_color;
+
+  int cell_size;
+  float soln_line_area;
+  int wall_thickness;
+
+  Vector2 view_dimensions;
+  Vector2 view_padding;
+
+  SDL_Color dark_colors[TOTAL_COLORS];
+  SDL_Color light_colors[TOTAL_COLORS];
+  const SDL_Color *curr_colors;
+};
+
 MazeRender *Maze_Render_Create(Vector2 view_dimensions, Vector2 view_padding,
-                               int wall_thickness, SDL_Color wall_color,
-                               float soln_line_area,
-                               SDL_Color generated_bg_color) {
+                               int wall_thickness, float soln_line_area) {
   MazeRender *maze_render = calloc(1, sizeof(MazeRender));
-  maze_render->wall_color = wall_color;
-  maze_render->generated_bg_color = generated_bg_color;
   maze_render->wall_thickness = wall_thickness;
   maze_render->soln_line_area = soln_line_area;
   maze_render->view_dimensions = view_dimensions;
   maze_render->view_padding = view_padding;
   maze_render->cell_size = 0;
+  maze_render->curr_colors = DEFAULT_DARK_COLORS;
   return maze_render;
+}
+
+void Maze_Render_Change_WallThickness(MazeRender *maze_render,
+                                      float wall_thickness) {
+  maze_render->wall_thickness = wall_thickness;
+}
+
+void Maze_Render_ChangeTheme(MazeRender *maze_render, bool enable_dark_mode) {
+  if (enable_dark_mode) {
+    maze_render->curr_colors = DEFAULT_DARK_COLORS;
+  } else {
+    maze_render->curr_colors = DEFAULT_LIGHT_COLORS;
+  }
+}
+
+SDL_Color Maze_Render_GetBGColor(MazeRender *maze_render) {
+  return maze_render->curr_colors[COL_RENDER_BACKGROUND];
 }
 
 static void draw_cell_connect(SDL_Renderer *renderer, CellPos curr_pos,
@@ -201,6 +217,7 @@ static void Render_Cell_Wall(SDL_Renderer *r, CellPos cell_pos,
   int curr_y = current_pos.y;
   int cell_size = maze_render->cell_size;
   int wall_thick = maze_render->wall_thickness;
+  SDL_Color wall_color = maze_render->curr_colors[COL_WALL];
   Line line;
 
   if (!curr_cell.path_north) {
@@ -209,7 +226,7 @@ static void Render_Cell_Wall(SDL_Renderer *r, CellPos cell_pos,
 
                   .end = {curr_x + cell_size, curr_y}};
 
-    DrawLineThick(r, line, maze_render->wall_color, wall_thick);
+    DrawLineThick(r, line, wall_color, wall_thick);
   }
   // Drawing South Wall
   if (!curr_cell.path_south) {
@@ -218,7 +235,7 @@ static void Render_Cell_Wall(SDL_Renderer *r, CellPos cell_pos,
 
                   .end = {curr_x + cell_size, curr_y + cell_size}};
 
-    DrawLineThick(r, line, maze_render->wall_color, wall_thick);
+    DrawLineThick(r, line, wall_color, wall_thick);
   }
   // Drawing east wall
   if (!curr_cell.path_east) {
@@ -226,7 +243,7 @@ static void Render_Cell_Wall(SDL_Renderer *r, CellPos cell_pos,
 
                   .end = {.x = curr_x + cell_size, curr_y + cell_size}};
 
-    DrawLineThick(r, line, maze_render->wall_color, wall_thick);
+    DrawLineThick(r, line, wall_color, wall_thick);
   }
   // Drawing west wall
   if (!curr_cell.path_west) {
@@ -234,7 +251,7 @@ static void Render_Cell_Wall(SDL_Renderer *r, CellPos cell_pos,
 
                   .end = {.x = curr_x, curr_y + cell_size}};
 
-    DrawLineThick(r, line, maze_render->wall_color, wall_thick);
+    DrawLineThick(r, line, wall_color, wall_thick);
   }
 }
 //
@@ -252,30 +269,41 @@ static void Render_Cell_Interior(SDL_Renderer *r, CellPos cell_pos,
   case STATE_BLANK:
 
     if (state & STATE_FRONTIER) {
-      draw_cell_fill_full(r, top_left, COL_STATE_FRONTIER, maze_render);
+      draw_cell_fill_full(r, top_left,
+                          maze_render->curr_colors[COL_STATE_FRONTIER],
+                          maze_render);
 
     } else if (state & STATE_BACKTRACKED) {
-      draw_cell_fill_full(r, top_left, COL_STATE_BACKTRACKED, maze_render);
+      draw_cell_fill_full(r, top_left,
+                          maze_render->curr_colors[COL_STATE_BACKTRACKED],
+                          maze_render);
 
     } else if (state & STATE_GEN_VISITED) {
-      draw_cell_fill_full(r, top_left, COL_STATE_GEN_VISITED, maze_render);
+      draw_cell_fill_full(r, top_left,
+                          maze_render->curr_colors[COL_STATE_GEN_VISITED],
+                          maze_render);
 
     } else if (state == STATE_BLANK) {
-      draw_cell_fill_full(r, top_left, COL_STATE_BLANK, maze_render);
+      draw_cell_fill_full(
+          r, top_left, maze_render->curr_colors[COL_STATE_BLANK], maze_render);
     }
     break;
 
   case STATE_GENERATED:
-    draw_cell_fill_full(r, top_left, COL_STATE_GENERATED, maze_render);
+    draw_cell_fill_full(r, top_left,
+                        maze_render->curr_colors[COL_STATE_GENERATED],
+                        maze_render);
 
     if (state & STATE_SOLVE_EXPLORED) {
-      draw_cell_connect(r, cell_pos, (STATE_SOLVE_EXPLORED | STATE_FRONTIER),
-                        top_left, COL_STATE_SOLVE_VISITED, maze_render, maze);
+      draw_cell_connect(
+          r, cell_pos, (STATE_SOLVE_EXPLORED | STATE_FRONTIER), top_left,
+          maze_render->curr_colors[COL_STATE_SOLVE_VISITED], maze_render, maze);
     }
 
     if (state & STATE_SOLUTION) {
       draw_cell_connect(r, cell_pos, STATE_SOLUTION, top_left,
-                        COL_STATE_SOLUTION, maze_render, maze);
+                        maze_render->curr_colors[COL_STATE_SOLUTION],
+                        maze_render, maze);
     }
 
     if (state & STATE_FRONTIER) {
@@ -284,7 +312,8 @@ static void Render_Cell_Interior(SDL_Renderer *r, CellPos cell_pos,
       // draw_cell_fill_offset(custom, COL_STATE_FRONTIER, maze_render,
       // -offset);
       draw_cell_connect(r, cell_pos, STATE_SOLVE_EXPLORED, top_left,
-                        COL_STATE_FRONTIER, maze_render, maze);
+                        maze_render->curr_colors[COL_STATE_FRONTIER],
+                        maze_render, maze);
     }
   }
 }
@@ -308,7 +337,7 @@ void Maze_Render(SDL_Renderer *r, MazeRender *maze_render, Maze *maze) {
   // Drawing the generated color rect behind the maze
   SDL_FRect full_maze_rect = {start_x, start_y, maze->columns * cell_size,
                               maze->rows * cell_size};
-  SDL_Color bg_col = maze_render->generated_bg_color;
+  SDL_Color bg_col = maze_render->curr_colors[COL_STATE_GENERATED];
   SDL_SetRenderDrawColor(r, bg_col.r, bg_col.g, bg_col.b, bg_col.a);
   SDL_RenderFillRect(r, &full_maze_rect);
 
@@ -334,8 +363,10 @@ void Maze_Render(SDL_Renderer *r, MazeRender *maze_render, Maze *maze) {
                  (maze->end_cell.row * cell_size) + start_y};
 
   // Filling Start and end Cell with color
-  draw_cell_fill_full(r, start, COL_START_CELL, maze_render);
-  draw_cell_fill_full(r, end, COL_END_CELL, maze_render);
+  draw_cell_fill_full(r, start, maze_render->curr_colors[COL_START_CELL],
+                      maze_render);
+  draw_cell_fill_full(r, end, maze_render->curr_colors[COL_END_CELL],
+                      maze_render);
 
   // Rendering the start and end cell walls
   Render_Cell_Wall(r, maze->start_cell, start, maze, maze_render);
