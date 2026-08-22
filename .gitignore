@@ -3,3 +3,6 @@ output.bin
 compile_commands.json
 build/
 .cache/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake

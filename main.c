@@ -127,6 +127,8 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result) {
     SDL_DestroyRenderer(as->renderer);
     MazeContext_Destroy(as->maze_ctx);
     SDL_DestroyWindow(as->window);
+    GUI_Deinit();
+    SDL_free(appstate);
   }
 }
 
