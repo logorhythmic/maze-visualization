@@ -3,6 +3,8 @@ output.bin
 compile_commands.json
 build/
 .cache/
+build-web/
+web/
 CMakeFiles/
 CMakeCache.txt
 cmake_install.cmake
