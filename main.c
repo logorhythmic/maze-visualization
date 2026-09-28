@@ -55,7 +55,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
 
   AppState *ap = SDL_calloc(1, sizeof(AppState));
 
-  SDL_WindowFlags window_flags = SDL_WINDOW_HIGH_PIXEL_DENSITY;
+  SDL_WindowFlags window_flags = 0;
 
   if (!SDL_CreateWindowAndRenderer("Maze Visualization", SCR_WIDTH, SCR_HEIGHT,
                                    window_flags, &ap->window, &ap->renderer)) {
@@ -67,6 +67,9 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
   int w, h;
   SDL_GetWindowSizeInPixels(ap->window, &w, &h);
   printf("Window width: %d, Window Height: %d\n", w, h);
+  printf("Active Video Driver: %s\n", SDL_GetCurrentVideoDriver());
+  printf("Display Scale Factor: %.2f\n",
+         SDL_GetDisplayContentScale(SDL_GetPrimaryDisplay()));
 
   // Setting up MazeUIState and MazeContext
   ap->maze_ui_state = MazeUIState_Create();
@@ -103,7 +106,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
   as->last_start = current_start;
 
   // Setting the screen scaling
-  Set_SDL_Scaling(as->window, as->renderer);
+  // Set_SDL_Scaling(as->window, as->renderer);
 
   // Clearing Screen
   SDL_Color bg = MazeContext_Get_BackgroundColor(as->maze_ctx);

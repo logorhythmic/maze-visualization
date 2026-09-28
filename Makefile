@@ -1,6 +1,6 @@
 
 PROJ_NAME := Maze-Vis
-.PHONY: web web-run
+.PHONY: run san web web-run
 
 run:
 	cmake -B build && cmake --build build && ./build/$(PROJ_NAME)

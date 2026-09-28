@@ -1,11 +1,12 @@
 #pragma once
 #include "state_manager.h"
-#include <SDL3/SDL.h>
-#include <SDL3/SDL_events.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+typedef struct SDL_Window SDL_Window;
+typedef union SDL_Event SDL_Event;
 
 #define GUI_WIDTH 300
 

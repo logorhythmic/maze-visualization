@@ -1,9 +1,10 @@
 #pragma once
 #include "maze.h"
-#include <SDL3/SDL_pixels.h>
-#include <SDL3/SDL_render.h>
+#include "state_manager.h"
 
 typedef struct MazeRender MazeRender;
+typedef union SDL_Event SDL_Event;
+typedef struct SDL_Renderer SDL_Renderer;
 
 typedef struct {
   int x;

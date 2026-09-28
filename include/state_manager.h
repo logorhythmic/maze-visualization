@@ -1,6 +1,6 @@
 #pragma once
-#include <SDL3/SDL_events.h>
-#include <SDL3/SDL_render.h>
+#include <SDL3/SDL_pixels.h>
+#include <stdint.h>
 
 #define DEFAULT_ROWS 30
 #define DEFAULT_COLUMNS 40
@@ -17,6 +17,7 @@
 extern "C" {
 
 #endif
+typedef struct SDL_Renderer SDL_Renderer;
 
 typedef enum {
   MAZE_BLANK,

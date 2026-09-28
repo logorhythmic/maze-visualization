@@ -1,5 +1,4 @@
 #include "state_manager.h"
-#include "colors.h"
 #include "generation.h"
 #include "gui.h"
 #include "maze.h"
