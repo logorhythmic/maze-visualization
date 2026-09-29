@@ -26,7 +26,6 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          sudo apt-get update
           sudo apt-get install -y cmake git build-essential python3
 
       - name: Setup Emscripten
@@ -35,7 +34,6 @@ jobs:
       - name: Build Project
         run: |
           mkdir build
-          cd build/
           emcmake cmake -B build-web/ -DCMAKE_BUILD_TYPE=Release && cmake --build build-web
 
       - name: Upload artefact
@@ -44,4 +42,5 @@ jobs:
           path: "build-web/"
 
       - name: Deploy artefact to GitHub Pages
+        id: deployment
         uses: actions/deploy-pages@v4
