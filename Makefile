@@ -12,7 +12,7 @@ release:
 	cmake -B build -DCMAKE_BUILD_TYPE=Release --fresh && cmake --build build && ./build/$(PROJ_NAME)
 
 web:
-	emcmake cmake -B build-web/ && cmake --build build-web
+	source /etc/profile.d/emscripten.sh && emcmake cmake -B build-web/ -DCMAKE_BUILD_TYPE=Release  && cmake --build build-web
 
 web-run:
 	source /etc/profile.d/emscripten.sh && emrun build-web/Maze-Vis.html

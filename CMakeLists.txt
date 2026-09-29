@@ -33,7 +33,7 @@ if(EMSCRIPTEN)
     # Use Emscripten built-in SDL3 port
     target_compile_options(${PROJECT_NAME} PRIVATE "-sUSE_SDL=3")
     target_link_options(${PROJECT_NAME} PRIVATE "-sUSE_SDL=3")
-	target_link_options(${PROJECT_NAME} PRIVATE "--shell-file" "${CMAKE_CURRENT_SOURCE_DIR}/web/shell.html")
+	target_link_options(${PROJECT_NAME} PRIVATE "--shell-file" "${CMAKE_CURRENT_SOURCE_DIR}/web/Maze-Vis.html")
 
 
 else()

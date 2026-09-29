@@ -1,9 +1,9 @@
 output.bin
-# build/
 compile_commands.json
 build/
+build-web/Makefile
+build-web/
 .cache/
-web/
 CMakeFiles/
 CMakeCache.txt
 cmake_install.cmake
