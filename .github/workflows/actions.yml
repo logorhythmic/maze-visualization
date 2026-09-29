@@ -22,7 +22,7 @@ jobs:
 
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install Dependencies
         run: |
@@ -35,12 +35,13 @@ jobs:
         run: |
           mkdir build
           emcmake cmake -B build-web/ -DCMAKE_BUILD_TYPE=Release && cmake --build build-web
+          mv build-web/Maze-Vis.html build-web/index.html
 
       - name: Upload artefact
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-pages-artifact@v5
         with:
           path: "build-web/"
 
       - name: Deploy artefact to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
